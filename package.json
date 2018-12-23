@@ -1,0 +1,26 @@
+{
+  "name": "marketplace",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "truffle": "truffle",
+    "compile": "truffle compile",
+    "migrate": "truffle migrate",
+    "test": "truffle test"
+  },
+  "keywords": [],
+  "author": "Anthony Estebe <anthony@mesg.com>",
+  "license": "ISC",
+  "dependencies": {
+    "openzeppelin-solidity": "^2.0.0",
+    "truffle": "^5.0.0"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "truffle-assertions": "^0.7.1"
+  },
+  "description": ""
+}
