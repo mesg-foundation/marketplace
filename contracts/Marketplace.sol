@@ -61,7 +61,7 @@ contract Marketplace is Ownable, Pausable {
 
     constructor() Ownable() Pausable() public {}
 
-    function createService(bytes32 sid) public whenNotPaused {
+    function createService(bytes32 sid) public whenNotPaused returns (address) {
         if (serviceContracts[sid].isContract()) {
             return;
         }
@@ -69,5 +69,6 @@ contract Marketplace is Ownable, Pausable {
         services.push(sid);
         totalServices = totalServices + 1;
         emit ServiceCreated(sid, serviceContracts[sid]);
+        return serviceContracts[sid];
     }
 }
