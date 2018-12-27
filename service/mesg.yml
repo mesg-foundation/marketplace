@@ -1,0 +1,38 @@
+name: "MESG Marketplace"
+sid: "mesg-marketplace"
+description: "Description of my service"
+tasks: 
+  totalServices:
+    inputs: {}
+    outputs:
+      success:
+        data:
+          total: { type: Number }
+      error:
+        data:
+          error: { type: String }
+  createService:
+    inputs:
+      sid: { type: String }
+      location: { type: String }
+      hash: { type: String }
+    outputs:
+      success:
+        data:
+          sid: { type: String }
+          hash: { type: String }
+          location: { type: String }
+      error:
+        data:
+          error: { type: String }
+events:
+  serviceCreated:
+    data:
+      sid: { type: String }
+      hash: { type: String }
+      location: { type: String }
+configuration:
+  env:
+    - MARKETPLACE_ADDRESS=0xE9607506c524Ef43732cE14a48e006094722a675
+    - ENDPOINT=wss://rinkeby.infura.io/ws/v3/...
+    - PRIVATE_KEY=...
