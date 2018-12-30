@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "truffle": "truffle",
-    "compile": "truffle compile && cp build/contracts/Marketplace.json service",
+    "compile": "truffle compile && cp build/contracts/Marketplace.json service && cp build/contracts/Service.json service",
     "migrate": "truffle migrate",
     "test": "truffle test"
   },
