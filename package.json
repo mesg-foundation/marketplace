@@ -12,7 +12,7 @@
   "author": "Anthony Estebe <anthony@mesg.com>",
   "license": "ISC",
   "dependencies": {
-    "openzeppelin-solidity": "^2.0.0",
+    "openzeppelin-solidity": "^2.1.0",
     "truffle": "^5.0.0",
     "truffle-hdwallet-provider": "^1.0.0-web3one.5"
   },

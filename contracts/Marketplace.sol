@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.5.0 <0.6.0;
 
 import "openzeppelin-solidity/contracts/utils/Address.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
@@ -48,12 +48,21 @@ contract Service is Ownable, Pausable {
     function hasAccessToVersion(bytes32 version, address user) public view returns (bool) {
         return _versionAccess[version][user];
     }
+
+    function isContract() public view returns (bool) {
+  		uint32 size;
+      address a = msg.sender;
+  		assembly {
+    		size := extcodesize(a)
+		  }
+  		return (size > 0);
+		}
 }
 
 contract Marketplace is Ownable, Pausable {
     using Address for address;
 
-    mapping (bytes32 => address) public serviceContracts;
+    mapping (bytes32 => Service) public serviceContracts;
     bytes32[] public services;
     uint256 public totalServices;
     
@@ -62,13 +71,12 @@ contract Marketplace is Ownable, Pausable {
     constructor() Ownable() Pausable() public {}
 
     function createService(bytes32 sid) public whenNotPaused returns (address) {
-        if (serviceContracts[sid].isContract()) {
-            return;
+        if (!serviceContracts[sid].isContract()) {
+        	serviceContracts[sid] = new Service(msg.sender, sid);
+        	services.push(sid);
+        	totalServices = totalServices + 1;
+        	emit ServiceCreated(sid, address(serviceContracts[sid]));
         }
-        serviceContracts[sid] = new Service(msg.sender, sid);
-        services.push(sid);
-        totalServices = totalServices + 1;
-        emit ServiceCreated(sid, serviceContracts[sid]);
-        return serviceContracts[sid];
+        return address(serviceContracts[sid]);
     }
 }
