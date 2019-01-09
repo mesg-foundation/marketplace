@@ -27,7 +27,7 @@ contract DBMesgService is Ownable {
     for (uint i = 0; i < services.length; i++) {
       if (services[i].sid == sid) {
         services[i].versions.push(Version({
-          hash: hash, 
+          hash: hash,
           url: url
         }));
         break;

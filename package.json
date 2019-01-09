@@ -6,6 +6,8 @@
     "truffle": "truffle",
     "compile": "truffle compile && cp build/contracts/Marketplace.json service && cp build/contracts/Service.json service",
     "migrate": "truffle migrate",
+    "lint:sol": "solium -d .",
+    "lint:sol:fix": "solium --fix -d .",
     "test": "truffle test"
   },
   "keywords": [],
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "ethlint": "^1.2.1",
     "truffle-assertions": "^0.7.1"
   },
   "description": ""

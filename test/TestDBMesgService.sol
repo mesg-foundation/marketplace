@@ -1,14 +1,14 @@
 pragma solidity >=0.5.2 <0.6.0;
 
-import 'truffle/Assert.sol';
-import '../contracts/DBMesgService.sol';
+import "truffle/Assert.sol";
+import "../contracts/DBMesgService.sol";
 
 contract TestDBMesgService {
   DBMesgService db;
 
   bytes32 constant _sid = hex"0014ee511b7b5522f2e2a7df611224e1a79a9ddbf6";
-  bytes16 constant _hash = 'v0.0.0';
-  bytes constant _url = 'http://github.com/mesg-foundation/core';
+  bytes16 constant _hash = "v0.0.0";
+  bytes constant _url = "http://github.com/mesg-foundation/core";
 
   function beforeEach() public {
     db = new DBMesgService();
