@@ -1,7 +1,7 @@
-pragma solidity >=0.5.2 <0.6.0;
+pragma solidity >=0.5.0 <0.6.0;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../node_modules/openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
