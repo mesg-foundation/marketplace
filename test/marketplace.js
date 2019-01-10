@@ -1,36 +1,104 @@
-// const Marketplace = artifacts.require("Marketplace")
-// const Service = artifacts.require("Service")
-// const assert = require("chai").assert
-// const truffleAssert = require('truffle-assertions')
+/* eslint-env mocha */
+/* global web3, contract, artifacts */
 
-// const toAscii = x => web3.utils.toAscii(x).replace(/\u0000/g, '')
-// const fromAscii = x => web3.utils.fromAscii(x)
-// const toNumber = x => web3.utils.toDecimal(x)
-// const pause = async (contract, from) => {
-//   const tx = await contract.pause(
-//     { from }
-//   )
-//   truffleAssert.eventEmitted(tx, 'Paused')
-//   return tx
-// }
-// const deployService = async (marketplace, sid, from) => {
-//   const bytesSid = fromAscii(sid)
-//   const serviceCount = toNumber(await marketplace.totalServices.call())
-//   const tx = await marketplace.createService(
-//     bytesSid,
-//     { from }
-//   )
-//   truffleAssert.eventEmitted(tx, 'ServiceCreated', async event => {
-//     assert.equal(toAscii(event.sid), sid)
-//     assert.equal(event.serviceAddress, await marketplace.serviceContracts.call(bytesSid))
-//     assert.equal(serviceCount + 1, toNumber(await marketplace.totalServices.call()))
-//     assert.equal(sid, toAscii(await marketplace.services.call(serviceCount)))
-//   })
-//   const serviceAddress = await marketplace.serviceContracts.call(bytesSid)
-//   return new Service(serviceAddress)
-// }
+const Marketplace = artifacts.require('Marketplace')
+const assert = require('chai').assert
+const truffleAssert = require('truffle-assertions')
 
-// contract("Marketplace", async accounts => {
+const toAscii = x => web3.utils.toAscii(x).replace(/\u0000/g, '')
+const fromAscii = x => web3.utils.fromAscii(x)
+const toNumber = x => web3.utils.toDecimal(x)
+
+contract('Marketplace', async accounts => {
+  const [
+    contractOwner,
+    contractOwner2,
+    developer,
+    developer2,
+    purchaser
+  ] = accounts
+  let marketplace = null
+
+  describe('contract ownership', async () => {
+    before(async () => {
+      marketplace = await Marketplace.new({ from: contractOwner })
+    })
+
+    it('original owner should have the ownership', async () => {
+      assert.equal(await marketplace.owner.call(), contractOwner)
+      assert.equal(await marketplace.isPauser.call(contractOwner), true)
+    })
+
+    it('should add pauser role', async () => {
+      const tx = await marketplace.addPauser(contractOwner2, { from: contractOwner })
+      truffleAssert.eventEmitted(tx, 'PauserAdded')
+    })
+
+    it('should remove pauser role', async () => {
+      const tx = await marketplace.renouncePauser({ from: contractOwner })
+      truffleAssert.eventEmitted(tx, 'PauserRemoved')
+    })
+
+    it('should transfer ownership', async () => {
+      const tx = await marketplace.transferOwnership(contractOwner2, { from: contractOwner })
+      truffleAssert.eventEmitted(tx, 'OwnershipTransferred')
+    })
+
+    it('new owner should have the ownership', async () => {
+      assert.equal(await marketplace.owner.call(), contractOwner2)
+      assert.equal(await marketplace.isPauser.call(contractOwner2), true)
+    })
+  })
+
+  describe('pause contract', async () => {
+    before(async () => {
+      marketplace = await Marketplace.new()
+    })
+
+    it('should pause', async () => {
+      assert.equal(await marketplace.paused(), false)
+      const tx = await marketplace.pause({ from: contractOwner })
+      truffleAssert.eventEmitted(tx, 'Paused')
+      assert.equal(await marketplace.paused(), true)
+    })
+
+    it('should unpause', async () => {
+      assert.equal(await marketplace.paused(), true)
+      const tx = await marketplace.unpause({ from: contractOwner })
+      truffleAssert.eventEmitted(tx, 'Unpaused')
+      assert.equal(await marketplace.paused(), false)
+    })
+  })
+
+  describe('service', async () => {
+    before(async () => {
+      marketplace = await Marketplace.new()
+    })
+
+    it('should create a service', async () => {
+      const sid = 'test-create-service'
+      const tx = await marketplace.createService(sid,
+        { from: developer }
+      )
+      truffleAssert.eventEmitted(tx, 'ServiceCreated')
+      assert.equal(await marketplace.getServicesCount(), 1)
+      const service = await marketplace.services.call(0)
+      assert.equal(service.owner, developer)
+      assert.equal(service.sid, sid)
+    })
+  })
+
+  // it("should change service owner", async () => {
+  //   const sid = "test-create-service"
+  //   const tx = await marketplace.changeServiceOwner(sid, developer2, { from: developer })
+  //   // assert.equal(await service.owner.call(), developer)
+  //   // assert.equal(await service.isPauser.call(deployer), false)
+  //   // assert.equal(await service.isPauser.call(developer), true)
+  //   // assert.equal(toAscii(await service.sid.call()), sid)
+  // })
+})
+
+// contract("Marketplace", async (accounts: string[]) => {
 
 //   const [deployer, developer, buyer] = accounts
 //   let marketplace = null
@@ -90,7 +158,7 @@
 //       assert.equal(toAscii(event.sid), sid)
 //       assert.equal(toAscii(event.id), "a")
 //       assert.equal(event.id, await service.latest.call())
-      
+
 //       const version = await service.versions.call(event.id)
 //       assert.equal(event.id, version.id)
 //       assert.equal("...", toAscii(version.location))

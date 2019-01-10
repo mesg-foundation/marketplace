@@ -166,19 +166,21 @@ contract Marketplace is Ownable, Pausable {
   }
 
   // ------------------------------------------------------
-  // Modifier functions
+  // Setter functions
   // ------------------------------------------------------
 
   // Manage Service
 
-  function addService (string memory sid) public returns (uint serviceIndex) {
+  function createService (string memory sid) public whenNotPaused returns (uint serviceIndex) {
     int _serviceIndex = getServiceIndexRaw(sid);
     require(_serviceIndex == -1, "Sid is already used");
-    services.length++; //is it really useful?
+
+    services.length++;
     Service storage service = services[services.length - 1];
     service.sid = sid;
     service.owner = msg.sender;
     
+    // The following doesn't work but seems cleaner than the previous
     // Version[] storage versions = new Version[](0);
     // Offer[] storage offers = new Offer[](0);
     // Payment[] storage payments = new Payment[](0);
@@ -191,10 +193,14 @@ contract Marketplace is Ownable, Pausable {
     // });
     // services.push(service);
 
+    emit ServiceCreated(service.owner, service.sid, services.length - 1);
+
     return services.length - 1;
   }
 
-  function changeServiceOwner (string memory sid, address newOwner) public {
+  event ServiceCreated(address indexed owner, string indexed sid, uint indexed serviceIndex);
+
+  function changeServiceOwner (string memory sid, address newOwner) public whenNotPaused {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -203,7 +209,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  function addServiceVersion (string memory sid, string memory hash, string memory url) public returns (uint versionIndex) {
+  function createServiceVersion (string memory sid, string memory hash, string memory url) public whenNotPaused returns (uint versionIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -216,7 +222,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Offer
 
-  function addServiceOffer (string memory sid, uint price, address payable seller, bool active) public returns (uint offerIndex) {
+  function createServiceOffer (string memory sid, uint price, address payable seller, bool active) public whenNotPaused returns (uint offerIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -228,7 +234,7 @@ contract Marketplace is Ownable, Pausable {
     return service.offers.length - 1;
   }
 
-  function editServiceOffer (string memory sid, uint offerIndex, bool active) public {
+  function editServiceOffer (string memory sid, uint offerIndex, bool active) public whenNotPaused {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -250,7 +256,7 @@ contract Marketplace is Ownable, Pausable {
     return false;
   }
 
-  function pay(string memory sid, uint offerIndex) public payable returns (uint paymentIndex) {
+  function pay(string memory sid, uint offerIndex) public payable whenNotPaused returns (uint paymentIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     Offer memory offer = service.offers[offerIndex];
