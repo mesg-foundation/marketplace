@@ -1,90 +1,101 @@
-pragma solidity >=0.5.0 <0.6.0;
+pragma solidity >=0.5.2 <0.6.0;
 
-// import "openzeppelin-solidity/contracts/utils/Address.sol";
-// import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-// import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
-// contract Service is Ownable, Pausable {
-//     bytes32 public sid;
-//     bytes32 public latest;
-//     mapping (bytes32 => Version) public versions;
-//     mapping (bytes32 => mapping(address => bool)) private _versionAccess;
+contract Marketplace is Ownable, Pausable {
+  // ------------------------------------------------------
+  // Structures
+  // ------------------------------------------------------
 
-//     struct Version {
-//         bytes32 id;
-//         bytes32 location;
-//         uint256 price;
-//         bool _exists;
-//     }
+  struct Version {
+    string hash;
+    string url;
+  }
 
-//     event VersionCreated(bytes32 sid, bytes32 id, bytes32 location, uint256 price);
+  struct Service {
+    address owner;
+    string sid;
+    Version[] versions;
+  }
 
-//     constructor(address creator, bytes32 _sid) Ownable() Pausable() public {
-//         sid = _sid;
-//         transferOwnership(creator);
-//         addPauser(creator);
-//         renouncePauser();
-//     }
+  // ------------------------------------------------------
+  // State variables
+  // ------------------------------------------------------
 
-//     function createVersion(bytes32 versionHash, bytes32 location, uint256 price) public onlyOwner whenNotPaused {
-//         require(!versions[versionHash]._exists, "This version already exists");
-//         versions[versionHash] = Version({
-//             id: versionHash,
-//             location: location,
-//             price: price,
-//             _exists: true
-//         });
-//         latest = versionHash;
-//         emit VersionCreated(sid, versionHash, location, price);
-//         return;
-//     }
+  Service[] public services; //TODO: shouldn't it be private?
 
-//     function requestAccess(bytes32 version) public whenNotPaused {
-//         require(!_versionAccess[version][msg.sender], "You already have access to this version of the service");
-//         _versionAccess[version][msg.sender] = true;
-//         return;
-//     }
+  // ------------------------------------------------------
+  // Constructor
+  // ------------------------------------------------------
 
-//     function hasAccessToVersion(bytes32 version, address user) public view returns (bool) {
-//         return _versionAccess[version][user];
-//     }
+  constructor() public {}
 
-//     function isContract() public view returns (bool) {
-//   		uint32 size;
-//       address a = msg.sender;
-//   		assembly {
-//     		size := extcodesize(a)
-// 		  }
-//   		return (size > 0);
-// 		}
-// }
+  // ------------------------------------------------------
+  // View functions
+  // ------------------------------------------------------
 
-// contract Marketplace is Ownable, Pausable {
-//   struct Version {
-//     bytes32 location;
-//     bytes32 version;
-//   }
+  function getService(string memory sid) public view returns(Service memory service) {
+    for (uint i = 0; i < services.length; i++) {
+      if (services[i].sid == sid) {
+        return services[i];
+      }
+    }
+    // TODO: should throw an error?
+  }
 
-//   struct Service {
-//     address owner;
-//     bytes32 public sid;
-//     Version[] public versions;
-//   }
+  function getServicesCount() public view returns(uint servicesCount) {
+    return services.length;
+  }
 
-//   mapping (bytes32 => Service) public services;
-//   bytes32[] public servicessid;
-    
-//   event ServiceCreated(bytes32 sid, address serviceAddress);
+  // is it useful? i think by hash is better
+  // function getServiceVersion(string memory sid, uint index) public view returns(Version memory version) {
+  //   Service memory service = getService(sid);
+  //   // TODO: assert sid exist
+  //   // TODO: assert version exist
+  //   return services.versions[index];
+  // }
 
-//   constructor() Ownable() Pausable() public {}
+  function getServiceVersion(string memory sid, string memory hash) public view returns(Version memory version) {
+    Service memory service = getService(sid);
+    for (uint i = 0; i < service.versions.length; i++) {
+      if (service.versions[i].hash == hash) {
+        return service.versions[i];
+      }
+    }
+    // TODO: should throw an error?
+  }
 
-//   function createService(bytes32 sid) public whenNotPaused returns (address) {
-//     if (!serviceContracts[sid].isContract()) {
-//     	serviceContracts[sid] = new Service(msg.sender, sid);
-//     	services.push(sid);
-//     	totalServices = totalServices + 1;
-//     	emit ServiceCreated(sid, address(serviceContracts[sid]));
-//     }
-//     return address(serviceContracts[sid]);
-//   }
-// }
+  function getLastServiceVersion(string memory sid) public view returns(Version memory version) {
+    Service memory service = getService(sid);
+    require(service.versions.length >= 1, "No version in this service");
+    return service.versions[service.versions.length - 1];
+  }
+
+  function getServiceVersionsCount(string memory sid) public view returns(uint serviceVersionsCount) {
+    Service memory service = getService(sid);
+    return service.versions.length;
+  }
+
+  // ------------------------------------------------------
+  // Modifier functions
+  // ------------------------------------------------------
+
+  function addService (string memory sid) public {
+    // TODO: add check if sid is not already used
+    services.length++; //is it really useful?
+    Service storage s = services[services.length - 1];
+    s.sid = sid;
+  }
+
+  function addServiceVersion (string memory sid, string memory hash, string memory url) public {
+    // TODO: assert sid exist
+    Service memory service = getService(sid);
+    require(service.owner == msg.sender, "Service owner is not the same as the sender");
+    service.versions.push(Version({
+      hash: hash,
+      url: url
+    }));
+    // TODO: or return error here
+  }
+}
