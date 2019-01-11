@@ -10,7 +10,7 @@ contract Marketplace is Ownable, Pausable {
 
   struct Service {
     address owner;
-    string sid;
+    bytes sid;
     Version[] versions;
     Offer[] offers;
     Payment[] payments;
@@ -18,7 +18,7 @@ contract Marketplace is Ownable, Pausable {
 
   struct Version {
     bytes20 hash;
-    string url;
+    bytes url;
   }
 
   struct Offer {
@@ -61,8 +61,8 @@ contract Marketplace is Ownable, Pausable {
   // Utils functions
   // ------------------------------------------------------
 
-  function compare(string memory a, string memory b) internal pure returns (bool) {
-    return keccak256(bytes(a)) == keccak256(bytes(b));
+  function compare(bytes memory a, bytes memory b) internal pure returns (bool) {
+    return keccak256(a) == keccak256(b);
   }
 
   // ------------------------------------------------------
@@ -71,7 +71,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Service
 
-  function getServiceIndexRaw(string memory sid) public view returns (int serviceIndex) {
+  function getServiceIndexRaw(bytes memory sid) public view returns (int serviceIndex) {
     for (uint i = 0; i < services.length; i++) {
       if (compare(services[i].sid, sid)) {
         return int(i);
@@ -80,7 +80,7 @@ contract Marketplace is Ownable, Pausable {
     return -1;
   }
 
-  function getServiceIndex(string memory sid) public view returns (uint serviceIndex) {
+  function getServiceIndex(bytes memory sid) public view returns (uint serviceIndex) {
     int _serviceIndex = getServiceIndexRaw(sid);
     require(_serviceIndex >= 0, "Service not found");
     return uint(_serviceIndex);
@@ -93,14 +93,14 @@ contract Marketplace is Ownable, Pausable {
   // Manage Version
 
   // is it useful? i think by hash is better
-  // function getServiceVersion(string memory sid, uint versionIndex) public view returns (Version memory version) {
+  // function getServiceVersion(bytes memory sid, uint versionIndex) public view returns (Version memory version) {
   //   Service memory service = getService(sid);
   //   // TODO: assert sid exist
   //   // TODO: assert version exist
   //   return services.versions[versionIndex];
   // }
 
-  // function getServiceVersion(string memory sid, bytes20 hash) public view returns (Version memory version) {
+  // function getServiceVersion(bytes memory sid, bytes20 hash) public view returns (Version memory version) {
   //   Service memory service = getService(sid);
   //   for (uint i = 0; i < service.versions.length; i++) {
   //     if (service.versions[i].hash == hash) {
@@ -110,7 +110,7 @@ contract Marketplace is Ownable, Pausable {
   //   // TODO: should throw an error?
   // }
 
-  function getServiceVersionIndex(string memory sid, bytes20 hash) public view returns (int versionIndex) {
+  function getServiceVersionIndex(bytes memory sid, bytes20 hash) public view returns (int versionIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service memory service = services[serviceIndex];
     for (uint i = 0; i < service.versions.length; i++) {
@@ -121,13 +121,13 @@ contract Marketplace is Ownable, Pausable {
     return -1;
   }
 
-  // function getLastServiceVersion(string memory sid) public view returns (Version memory version) {
+  // function getLastServiceVersion(bytes memory sid) public view returns (Version memory version) {
   //   Service memory service = getService(sid);
   //   require(service.versions.length >= 1, "No version in this service");
   //   return service.versions[service.versions.length - 1];
   // }
 
-  function getServiceVersionsCount(string memory sid) public view returns (uint serviceVersionsCount) {
+  function getServiceVersionsCount(bytes memory sid) public view returns (uint serviceVersionsCount) {
     uint serviceIndex = getServiceIndex(sid);
     Service memory service = services[serviceIndex];
     return service.versions.length;
@@ -135,7 +135,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Offer
 
-  // function getServiceOffer(string memory sid, uint offerIndex) public view returns (Offer memory offer) {
+  // function getServiceOffer(bytes memory sid, uint offerIndex) public view returns (Offer memory offer) {
   //   int serviceIndex = getService(sid);
   //   Service memory service = services[serviceIndex];
   //   // TODO: assert sid exist
@@ -143,7 +143,7 @@ contract Marketplace is Ownable, Pausable {
   //   return services.offers[offerIndex];
   // }
 
-  function getServiceOffersCount(string memory sid) public view returns (uint serviceOffersCount) {
+  function getServiceOffersCount(bytes memory sid) public view returns (uint serviceOffersCount) {
     uint serviceIndex = getServiceIndex(sid);
     Service memory service = services[serviceIndex];
     return service.offers.length;
@@ -151,7 +151,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Payment
 
-  // function getServicePayment(string memory sid, uint paymentIndex) public view returns (Payment memory payment) {
+  // function getServicePayment(bytes memory sid, uint paymentIndex) public view returns (Payment memory payment) {
   //   uint serviceIndex = getServiceIndex(sid);
   //   Service memory service = services[serviceIndex];
   //   // TODO: assert sid exist
@@ -159,7 +159,7 @@ contract Marketplace is Ownable, Pausable {
   //   return services.payments[paymentIndex];
   // }
 
-  function getServicePaymentsCount(string memory sid) public view returns (uint servicePaymentsCount) {
+  function getServicePaymentsCount(bytes memory sid) public view returns (uint servicePaymentsCount) {
     uint serviceIndex = getServiceIndex(sid);
     Service memory service = services[serviceIndex];
     return service.payments.length;
@@ -171,7 +171,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Service
 
-  function createService (string memory sid) public whenNotPaused returns (uint serviceIndex) {
+  function createService (bytes memory sid) public whenNotPaused returns (uint serviceIndex) {
     int _serviceIndex = getServiceIndexRaw(sid);
     require(_serviceIndex == -1, "Sid is already used");
 
@@ -198,9 +198,9 @@ contract Marketplace is Ownable, Pausable {
     return services.length - 1;
   }
 
-  event ServiceCreated(address indexed owner, string indexed sid, uint indexed serviceIndex);
+  event ServiceCreated(address indexed owner, bytes indexed sid, uint indexed serviceIndex);
 
-  function changeServiceOwner (string memory sid, address newOwner) public whenNotPaused {
+  function changeServiceOwner (bytes memory sid, address newOwner) public whenNotPaused {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -209,7 +209,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  function createServiceVersion (string memory sid, bytes20 hash, string memory url) public whenNotPaused returns (uint versionIndex) {
+  function createServiceVersion (bytes memory sid, bytes20 hash, bytes memory url) public whenNotPaused returns (uint versionIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -222,7 +222,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Offer
 
-  function createServiceOffer (string memory sid, uint price, address payable seller, bool active) public whenNotPaused returns (uint offerIndex) {
+  function createServiceOffer (bytes memory sid, uint price, address payable seller, bool active) public whenNotPaused returns (uint offerIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -234,7 +234,7 @@ contract Marketplace is Ownable, Pausable {
     return service.offers.length - 1;
   }
 
-  function editServiceOffer (string memory sid, uint offerIndex, bool active) public whenNotPaused {
+  function editServiceOffer (bytes memory sid, uint offerIndex, bool active) public whenNotPaused {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
@@ -245,7 +245,7 @@ contract Marketplace is Ownable, Pausable {
   // Payment
   // ------------------------------------------------------
 
-  function verify(string memory sid) public view returns (bool isPaid) {
+  function verify(bytes memory sid) public view returns (bool isPaid) {
     uint serviceIndex = getServiceIndex(sid);
     Service memory service = services[serviceIndex];
     for (uint i = 0; i < service.payments.length; i++) {
@@ -256,7 +256,7 @@ contract Marketplace is Ownable, Pausable {
     return false;
   }
 
-  function pay(string memory sid, uint offerIndex) public payable whenNotPaused returns (uint paymentIndex) {
+  function pay(bytes memory sid, uint offerIndex) public payable whenNotPaused returns (uint paymentIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     Offer memory offer = service.offers[offerIndex];
