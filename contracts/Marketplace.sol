@@ -93,6 +93,16 @@ contract Marketplace is Ownable, Pausable {
     require(false, "Version not found");
   }
 
+  function getServicePaymentIndex(uint serviceIndex, address purchaser) public view returns (uint paymentIndex) {
+    Service memory service = services[serviceIndex];
+    for (uint i = 0; i < service.payments.length; i++) {
+      if (service.payments[i].purchaser == purchaser) {
+        return i;
+      }
+    }
+    require(false, "Payment not found");
+  }
+
   // Count
 
   function getServicesCount() public view returns (uint servicesCount) {
