@@ -19,7 +19,8 @@ contract('Marketplace', async accounts => {
     contractOwner2,
     developer,
     developer2,
-    purchaser
+    purchaser,
+    purchaser2
   ] = accounts
   let marketplace = null
 
@@ -77,6 +78,7 @@ contract('Marketplace', async accounts => {
   describe('create service', async () => {
     const sid = 'test-create-service-0'
     const price = 1000000000
+    const price2 = 2000000000
     const version = {
       hash: '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
       url: 'https://download.com/core.tar'
@@ -94,7 +96,7 @@ contract('Marketplace', async accounts => {
       const event = tx.logs[0].args
       assert.isTrue(isBN(event.serviceIndex))
       assert.isTrue(event.serviceIndex.eq(BN(0)))
-      // assert.isTrue(event.serviceIndex.eq(0))
+      assert.equal(hexToAscii(event.sid), sid)
       assert.equal(event.owner, developer)
     })
 
@@ -106,11 +108,31 @@ contract('Marketplace', async accounts => {
       assert.equal(service.price, price)
     })
 
+    it('should change service price', async () => {
+      const tx = await marketplace.changeServicePrice(0, price2,
+        { from: developer }
+      )
+      truffleAssert.eventEmitted(tx, 'ServicePriceChanged')
+      const event = tx.logs[0].args
+      assert.isTrue(isBN(event.serviceIndex))
+      assert.isTrue(event.serviceIndex.eq(BN(0)))
+      assert.equal(hexToAscii(event.sid), sid)
+      assert.equal(event.previousPrice, price)
+      assert.equal(event.newPrice, price2)
+    })
+
+    it('should have changed service price', async () => {
+      assert.equal(await marketplace.getServicesCount(), 1)
+      const service = await marketplace.services.call(0)
+      assert.equal(service.owner, developer)
+      assert.equal(hexToAscii(service.sid), sid)
+      assert.equal(service.price, price2)
+    })
+
     it('should create a version', async () => {
       const tx = await marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url),
         { from: developer }
       )
-
       truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
       const event = tx.logs[0].args
       assert.isTrue(web3.utils.isBN(event.serviceIndex))
@@ -125,142 +147,39 @@ contract('Marketplace', async accounts => {
       assert.equal(_version.hash, version.hash)
       assert.equal(hexToAscii(_version.url), version.url)
     })
+
+    it('should pay a service', async () => {
+      const tx = await marketplace.pay(0,
+        { from: purchaser, value: price2 }
+      )
+      truffleAssert.eventEmitted(tx, 'ServicePaid')
+      const event = tx.logs[0].args
+      assert.isTrue(web3.utils.isBN(event.serviceIndex))
+      assert.isTrue(event.serviceIndex.eq(BN(0)))
+      assert.equal(hexToAscii(event.sid), sid)
+      assert.equal(event.purchaser, purchaser)
+      assert.equal(event.price, price2)
+    })
+
+    it('should have paid service', async () => {
+      assert.equal(await marketplace.hasPaid(0, {
+        from: purchaser
+      }), true)
+      const _payment = await marketplace.getPayment(0, 0)
+      assert.equal(_payment, purchaser)
+    })
+
+    it('should transfer service ownership', async () => {
+      const tx = await marketplace.transferServiceOwnership(0, developer2,
+        { from: developer }
+      )
+      truffleAssert.eventEmitted(tx, 'ServiceOwnershipTransferred')
+      const event = tx.logs[0].args
+      assert.isTrue(web3.utils.isBN(event.serviceIndex))
+      assert.isTrue(event.serviceIndex.eq(BN(0)))
+      assert.equal(hexToAscii(event.sid), sid)
+      assert.equal(event.previousOwner, developer)
+      assert.equal(event.newOwner, developer2)
+    })
   })
-
-  // it("should transfer service ownership", async () => {
-  //   const sid = "test-create-service"
-  //   const tx = await marketplace.changeServiceOwner(sid, developer2, { from: developer })
-  //   // assert.equal(await service.owner.call(), developer)
-  //   // assert.equal(await service.isPauser.call(deployer), false)
-  //   // assert.equal(await service.isPauser.call(developer), true)
-  //   // assert.equal(toAscii(await service.sid.call()), sid)
-  // })
 })
-
-// contract("Marketplace", async (accounts: string[]) => {
-
-//   const [deployer, developer, buyer] = accounts
-//   let marketplace = null
-//   beforeEach(async () => {
-//     marketplace = await Marketplace.deployed()
-//   })
-
-//   it("should have the right ownership", async () => {
-//     assert.equal(await marketplace.owner.call(), deployer)
-//     assert.equal(await marketplace.isPauser.call(deployer), true)
-//   })
-
-//   it("should create a service", async () => {
-//     const sid = "test-create-service"
-//     const service = await deployService(marketplace, sid, developer)
-//     assert.equal(await service.owner.call(), developer)
-//     assert.equal(await service.isPauser.call(deployer), false)
-//     assert.equal(await service.isPauser.call(developer), true)
-//     assert.equal(toAscii(await service.sid.call()), sid)
-//   })
-
-//   it("should pause the marketplace", async () => {
-//     const sid = "test-pause-marketplace"
-//     await pause(marketplace, deployer)
-//     const bytesSid = web3.utils.fromAscii(sid)
-//     await truffleAssert.reverts(marketplace.createService(
-//       bytesSid,
-//       { from: developer }
-//     ))
-//   })
-// })
-
-// contract("Service", async accounts => {
-//   const [developer, buyer, buyer2] = accounts
-//   let service = null
-//   let sid = null
-//   beforeEach(async () => {
-//     const marketplace = await Marketplace.deployed()
-//     sid = (Math.random() * 100).toString()
-//     service = await deployService(marketplace, sid, developer)
-//   })
-
-//   it("should have the right ownership", async () => {
-//     assert.equal(await service.owner.call(), developer)
-//     assert.equal(await service.isPauser.call(developer), true)
-//     assert.equal(toAscii(await service.sid.call()), sid)
-//   })
-
-//   it("should create a version", async () => {
-//     const tx = await service.createVersion(
-//       fromAscii("a"),
-//       fromAscii("..."),
-//       10,
-//       { from: developer }
-//     )
-//     truffleAssert.eventEmitted(tx, 'VersionCreated', async event => {
-//       assert.equal(toAscii(event.sid), sid)
-//       assert.equal(toAscii(event.id), "a")
-//       assert.equal(event.id, await service.latest.call())
-
-//       const version = await service.versions.call(event.id)
-//       assert.equal(event.id, version.id)
-//       assert.equal("...", toAscii(version.location))
-//       assert.equal(10, toNumber(version.price))
-//     })
-//     assert.equal(await service.owner.call(), developer)
-//     assert.equal(await service.isPauser.call(developer), true)
-//     assert.equal(toAscii(await service.sid.call()), sid)
-//   })
-
-//   it("shoulnt create a version", async () => {
-//     await truffleAssert.passes(service.createVersion(
-//       fromAscii("a"),
-//       fromAscii("..."),
-//       10,
-//       { from: developer }
-//     ))
-//     await truffleAssert.reverts(service.createVersion(
-//       fromAscii("a"),
-//       fromAscii("..."),
-//       10,
-//       { from: developer }
-//     ))
-
-//     await truffleAssert.reverts(service.createVersion(
-//       fromAscii("b"),
-//       fromAscii("..."),
-//       10,
-//       { from: buyer }
-//     ))
-//     await pause(service, developer)
-//     await truffleAssert.reverts(service.createVersion(
-//       fromAscii("b"),
-//       fromAscii("..."),
-//       10,
-//       { from: developer }
-//     ))
-//   })
-
-//   it("should request access", async () => {
-//     assert.equal(await service.hasAccessToVersion.call(fromAscii("a"), buyer), false)
-//     await truffleAssert.passes(service.createVersion(
-//       fromAscii("a"),
-//       fromAscii("..."),
-//       10,
-//       { from: developer }
-//     ))
-//     assert.equal(await service.hasAccessToVersion.call(fromAscii("a"), buyer), false)
-//     await truffleAssert.passes(service.requestAccess(
-//       fromAscii("a"),
-//       { from: buyer }
-//     ))
-//     assert.equal(await service.hasAccessToVersion.call(fromAscii("a"), buyer), true)
-//     await truffleAssert.reverts(service.requestAccess(
-//       fromAscii("a"),
-//       { from: buyer }
-//     ))
-//     assert.equal(await service.hasAccessToVersion.call(fromAscii("a"), buyer2), false)
-//     await pause(service, developer)
-//     await truffleAssert.reverts(service.requestAccess(
-//       fromAscii("a"),
-//       { from: buyer2 }
-//     ))
-//     assert.equal(await service.hasAccessToVersion.call(fromAscii("a"), buyer2), false)
-//   })
-// })
