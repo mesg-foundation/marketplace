@@ -1,13 +1,17 @@
 /* eslint-env mocha */
-/* global web3, contract, artifacts */
+/* global contract, artifacts */
 
 const Marketplace = artifacts.require('Marketplace')
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
+const web3 = require('web3')
 
-const toAscii = x => web3.utils.toAscii(x).replace(/\u0000/g, '')
-const fromAscii = x => web3.utils.fromAscii(x)
-const toNumber = x => web3.utils.toDecimal(x)
+const hexToAscii = x => web3.utils.hexToAscii(x).replace(/\u0000/g, '')
+const padRight = x => web3.utils.padRight(x, 64)
+const asciiToHex = x => web3.utils.asciiToHex(x)
+const hexToNumber = x => web3.utils.hexToNumber(x)
+const BN = x => new web3.utils.BN(x)
+const isBN = x => web3.utils.isBN(x)
 
 contract('Marketplace', async accounts => {
   const [
@@ -70,25 +74,60 @@ contract('Marketplace', async accounts => {
     })
   })
 
-  describe('service', async () => {
+  describe('create service', async () => {
+    const sid = 'test-create-service-0'
+    const price = 1000000000
+    const version = {
+      hash: '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
+      url: 'https://download.com/core.tar'
+    }
+
     before(async () => {
       marketplace = await Marketplace.new()
     })
 
     it('should create a service', async () => {
-      const sid = 'test-create-service'
-      const tx = await marketplace.createService(sid,
+      const tx = await marketplace.createService(asciiToHex(sid), price,
         { from: developer }
       )
       truffleAssert.eventEmitted(tx, 'ServiceCreated')
+      const event = tx.logs[0].args
+      assert.isTrue(isBN(event.serviceIndex))
+      assert.isTrue(event.serviceIndex.eq(BN(0)))
+      // assert.isTrue(event.serviceIndex.eq(0))
+      assert.equal(event.owner, developer)
+    })
+
+    it('should have one service', async () => {
       assert.equal(await marketplace.getServicesCount(), 1)
       const service = await marketplace.services.call(0)
       assert.equal(service.owner, developer)
-      assert.equal(service.sid, sid)
+      assert.equal(hexToAscii(service.sid), sid)
+      assert.equal(service.price, price)
+    })
+
+    it('should create a version', async () => {
+      const tx = await marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url),
+        { from: developer }
+      )
+
+      truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
+      const event = tx.logs[0].args
+      assert.isTrue(web3.utils.isBN(event.serviceIndex))
+      assert.isTrue(event.serviceIndex.eq(BN(0)))
+      assert.equal(event.hash, version.hash)
+      assert.equal(hexToAscii(event.url), version.url)
+    })
+
+    it('should have one version', async () => {
+      assert.equal(await marketplace.getServiceVersionsCount(0), 1)
+      const _version = await marketplace.getVersion(0, 0)
+      assert.equal(_version.hash, version.hash)
+      assert.equal(hexToAscii(_version.url), version.url)
     })
   })
 
-  // it("should change service owner", async () => {
+  // it("should transfer service ownership", async () => {
   //   const sid = "test-create-service"
   //   const tx = await marketplace.changeServiceOwner(sid, developer2, { from: developer })
   //   // assert.equal(await service.owner.call(), developer)
