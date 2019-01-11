@@ -30,13 +30,16 @@ contract Marketplace is Ownable, Pausable {
   // Events
   // ------------------------------------------------------
 
+  // TODO: indexed on bytes20 transform it as bytes32
+  // TODO: indexed on bytes transform it to something else
+  // TODO: apply same logic for event data and index
   event ServiceCreated(uint serviceIndex, bytes sid, address indexed owner, uint price);
 
   event ServiceOwnershipTransferred(uint serviceIndex, bytes sid, address indexed previousOwner, address indexed newOwner);
 
   event ServicePriceChanged(uint serviceIndex, bytes sid, uint previousPrice, uint newPrice);
 
-  event ServiceVersionCreated(uint serviceIndex, bytes20 hash, bytes url); // not indexed on bytes20 because it is transform as bytes32
+  event ServiceVersionCreated(uint serviceIndex, bytes20 hash, bytes url);
 
   event ServicePaid(uint serviceIndex, bytes sid, address indexed purchaser, address indexed seller, uint price);
 
