@@ -36,7 +36,7 @@ contract Marketplace is Ownable, Pausable {
 
   event ServicePriceChanged(uint serviceIndex, bytes indexed sid, uint previousPrice, uint newPrice);
 
-  event ServiceVersionCreated(uint serviceIndex, bytes20 indexed hash, bytes url);
+  event ServiceVersionCreated(uint serviceIndex, bytes20 hash, bytes url); // not indexed on bytes20 because it is transform as bytes32
 
   event ServicePaid(uint serviceIndex, bytes indexed sid, address indexed purchaser, address indexed seller, uint price);
 
