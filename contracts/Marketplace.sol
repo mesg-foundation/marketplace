@@ -30,7 +30,15 @@ contract Marketplace is Ownable, Pausable {
   // Events
   // ------------------------------------------------------
 
-  event ServiceCreated(uint indexed serviceIndex, bytes indexed sid, address indexed owner, uint price);
+  event ServiceCreated(uint serviceIndex, bytes indexed sid, address indexed owner, uint price);
+
+  event ServiceOwnershipTransferred(uint serviceIndex, bytes indexed sid, address indexed previousOwner, address indexed newOwner);
+
+  event ServicePriceChanged(uint serviceIndex, bytes indexed sid, uint previousPrice, uint newPrice);
+
+  event ServiceVersionCreated(uint serviceIndex, bytes20 indexed hash, bytes url);
+
+  event ServicePaid(uint serviceIndex, bytes indexed sid, address indexed purchaser, address indexed seller, uint price);
 
   // ------------------------------------------------------
   // State variables
@@ -82,7 +90,7 @@ contract Marketplace is Ownable, Pausable {
         return i;
       }
     }
-    require(false, "Service version not found");
+    require(false, "Version not found");
   }
 
   // Count
@@ -124,13 +132,17 @@ contract Marketplace is Ownable, Pausable {
   function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused {
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
+    address previousOwner = service.owner;
     service.owner = newOwner;
+    emit ServiceOwnershipTransferred(serviceIndex, service.sid, previousOwner, service.owner);
   }
 
   function changeServicePrice (uint serviceIndex, uint newPrice) public whenNotPaused {
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
+    uint previousPrice = service.price;
     service.price = newPrice;
+    emit ServicePriceChanged(serviceIndex, service.sid, previousPrice, service.price);
   }
 
   // Manage Version
@@ -142,6 +154,7 @@ contract Marketplace is Ownable, Pausable {
       hash: hash,
       url: url
     }));
+    emit ServiceVersionCreated(serviceIndex, hash, url);
     return service.versions.length - 1;
   }
 
@@ -166,6 +179,7 @@ contract Marketplace is Ownable, Pausable {
     service.payments.push(Payment({
       purchaser: msg.sender
     }));
+    emit ServicePaid(serviceIndex, service.sid, msg.sender, service.owner, service.price);
     return service.payments.length - 1;
   }
 }
