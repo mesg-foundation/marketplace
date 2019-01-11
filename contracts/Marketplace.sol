@@ -121,7 +121,7 @@ contract Marketplace is Ownable, Pausable {
     return services.length - 1;
   }
 
-  function changeServiceOwner (uint serviceIndex, address payable newOwner) public whenNotPaused {
+  function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused {
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
     service.owner = newOwner;
