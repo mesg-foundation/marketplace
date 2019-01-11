@@ -17,7 +17,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   struct Version {
-    string hash;
+    bytes20 hash;
     string url;
   }
 
@@ -100,7 +100,7 @@ contract Marketplace is Ownable, Pausable {
   //   return services.versions[versionIndex];
   // }
 
-  // function getServiceVersion(string memory sid, string memory hash) public view returns (Version memory version) {
+  // function getServiceVersion(string memory sid, bytes20 hash) public view returns (Version memory version) {
   //   Service memory service = getService(sid);
   //   for (uint i = 0; i < service.versions.length; i++) {
   //     if (service.versions[i].hash == hash) {
@@ -110,11 +110,11 @@ contract Marketplace is Ownable, Pausable {
   //   // TODO: should throw an error?
   // }
 
-  function getServiceVersionIndex(string memory sid, string memory hash) public view returns (int versionIndex) {
+  function getServiceVersionIndex(string memory sid, bytes20 hash) public view returns (int versionIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service memory service = services[serviceIndex];
     for (uint i = 0; i < service.versions.length; i++) {
-      if (compare(service.versions[i].hash, hash)) {
+      if (service.versions[i].hash == hash) {
         return int(i);
       }
     }
@@ -209,7 +209,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  function createServiceVersion (string memory sid, string memory hash, string memory url) public whenNotPaused returns (uint versionIndex) {
+  function createServiceVersion (string memory sid, bytes20 hash, string memory url) public whenNotPaused returns (uint versionIndex) {
     uint serviceIndex = getServiceIndex(sid);
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
