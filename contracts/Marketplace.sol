@@ -27,6 +27,18 @@ contract Marketplace is Ownable, Pausable {
   }
 
   // ------------------------------------------------------
+  // State variables
+  // ------------------------------------------------------
+
+  Service[] public services;
+
+  // ------------------------------------------------------
+  // Constructor
+  // ------------------------------------------------------
+
+  constructor() public {}
+
+  // ------------------------------------------------------
   // Events
   // ------------------------------------------------------
 
@@ -44,18 +56,6 @@ contract Marketplace is Ownable, Pausable {
   event ServicePaid(uint serviceIndex, bytes sid, address indexed purchaser, address indexed seller, uint price);
 
   // ------------------------------------------------------
-  // State variables
-  // ------------------------------------------------------
-
-  Service[] public services;
-
-  // ------------------------------------------------------
-  // Constructor
-  // ------------------------------------------------------
-
-  constructor() public {}
-
-  // ------------------------------------------------------
   // Modifier functions
   // ------------------------------------------------------
 
@@ -68,6 +68,7 @@ contract Marketplace is Ownable, Pausable {
   // Utils functions
   // ------------------------------------------------------
 
+  // TODO: test if first variable should be a storage because its always coming from a storage data
   function compareBytes(bytes memory a, bytes memory b) internal pure returns (bool) {
     return keccak256(a) == keccak256(b);
   }
