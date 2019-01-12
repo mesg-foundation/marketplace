@@ -56,11 +56,12 @@ contract Marketplace is Ownable, Pausable {
   constructor() public {}
 
   // ------------------------------------------------------
-  // Check functions
+  // Modifier functions
   // ------------------------------------------------------
 
-  function checkServiceOwner(Service memory service) private view {
-    require(service.owner == msg.sender, "Service owner is not the same as the sender");
+  modifier onlyServiceOwner(uint serviceIndex) {
+    require(services[serviceIndex].owner == msg.sender, "Service owner is not the same as the sender");
+    _;
   }
 
   // ------------------------------------------------------
@@ -150,25 +151,22 @@ contract Marketplace is Ownable, Pausable {
     return services.length - 1;
   }
 
-  function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused {
+  function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused onlyServiceOwner(serviceIndex) {
     Service storage service = services[serviceIndex];
-    checkServiceOwner(service);
     emit ServiceOwnershipTransferred(serviceIndex, service.sid, service.owner, newOwner);
     service.owner = newOwner;
   }
 
-  function changeServicePrice (uint serviceIndex, uint newPrice) public whenNotPaused {
+  function changeServicePrice (uint serviceIndex, uint newPrice) public whenNotPaused onlyServiceOwner(serviceIndex) {
     Service storage service = services[serviceIndex];
-    checkServiceOwner(service);
     emit ServicePriceChanged(serviceIndex, service.sid, service.price, newPrice);
     service.price = newPrice;
   }
 
   // Manage Version
 
-  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes memory url) public whenNotPaused returns (uint versionIndex) {
+  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes memory url) public whenNotPaused onlyServiceOwner(serviceIndex) returns (uint versionIndex) {
     Service storage service = services[serviceIndex];
-    checkServiceOwner(service);
     service.versions.push(Version({
       hash: hash,
       url: url
