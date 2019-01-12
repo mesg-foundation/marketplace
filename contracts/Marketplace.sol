@@ -67,7 +67,7 @@ contract Marketplace is Ownable, Pausable {
   // Utils functions
   // ------------------------------------------------------
 
-  function compare(bytes memory a, bytes memory b) internal pure returns (bool) {
+  function compareBytes(bytes memory a, bytes memory b) internal pure returns (bool) {
     return keccak256(a) == keccak256(b);
   }
 
@@ -90,7 +90,7 @@ contract Marketplace is Ownable, Pausable {
 
   function getServiceIndex(bytes memory sid) public view returns (uint serviceIndex) {
     for (uint i = 0; i < services.length; i++) {
-      if (compare(services[i].sid, sid)) {
+      if (compareBytes(services[i].sid, sid)) {
         return i;
       }
     }
@@ -139,7 +139,7 @@ contract Marketplace is Ownable, Pausable {
 
   function createService (bytes memory sid, uint price) public whenNotPaused returns (uint serviceIndex) {
     for (uint i = 0; i < services.length; i++) {
-      require(!compare(services[i].sid, sid), "Sid is already used");
+      require(!compareBytes(services[i].sid, sid), "Sid is already used");
     }
 
     services.length++;
