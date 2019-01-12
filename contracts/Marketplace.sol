@@ -76,12 +76,12 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   // TODO: have to create getter for version and payment because services auto-generated getter doesn't return array of struct
-  function getVersion(uint serviceIndex, uint versionIndex) public view returns (bytes20 hash, bytes memory url) {
+  function getServiceVersion(uint serviceIndex, uint versionIndex) public view returns (bytes20 hash, bytes memory url) {
     Version memory version = services[serviceIndex].versions[versionIndex];
     return (version.hash, version.url);
   }
 
-  function getPayment(uint serviceIndex, uint paymentIndex) public view returns (address purchaser) {
+  function getServicePayment(uint serviceIndex, uint paymentIndex) public view returns (address purchaser) {
     Payment memory payment = services[serviceIndex].payments[paymentIndex];
     return payment.purchaser;
   }

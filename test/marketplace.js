@@ -143,7 +143,7 @@ contract('Marketplace', async accounts => {
 
     it('should have one version', async () => {
       assert.equal(await marketplace.getServiceVersionsCount(0), 1)
-      const _version = await marketplace.getVersion(0, 0)
+      const _version = await marketplace.getServiceVersion(0, 0)
       assert.equal(_version.hash, version.hash)
       assert.equal(hexToAscii(_version.url), version.url)
     })
@@ -165,7 +165,7 @@ contract('Marketplace', async accounts => {
       assert.equal(await marketplace.hasPaid(0, {
         from: purchaser
       }), true)
-      const _payment = await marketplace.getPayment(0, 0)
+      const _payment = await marketplace.getServicePayment(0, 0)
       assert.equal(_payment, purchaser)
     })
 
