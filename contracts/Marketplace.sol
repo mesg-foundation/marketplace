@@ -141,15 +141,12 @@ contract Marketplace is Ownable, Pausable {
     for (uint i = 0; i < services.length; i++) {
       require(!compareBytes(services[i].sid, sid), "Sid is already used");
     }
-
     services.length++;
     Service storage service = services[services.length - 1];
     service.sid = sid;
     service.price = price;
     service.owner = msg.sender;
-
     emit ServiceCreated(services.length - 1, service.sid, service.owner, service.price);
-
     return services.length - 1;
   }
 
