@@ -156,17 +156,15 @@ contract Marketplace is Ownable, Pausable {
   function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused {
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
-    address previousOwner = service.owner;
+    emit ServiceOwnershipTransferred(serviceIndex, service.sid, service.owner, newOwner);
     service.owner = newOwner;
-    emit ServiceOwnershipTransferred(serviceIndex, service.sid, previousOwner, service.owner);
   }
 
   function changeServicePrice (uint serviceIndex, uint newPrice) public whenNotPaused {
     Service storage service = services[serviceIndex];
     checkServiceOwner(service);
-    uint previousPrice = service.price;
+    emit ServicePriceChanged(serviceIndex, service.sid, service.price, newPrice);
     service.price = newPrice;
-    emit ServicePriceChanged(serviceIndex, service.sid, previousPrice, service.price);
   }
 
   // Manage Version
