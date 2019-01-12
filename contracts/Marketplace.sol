@@ -77,12 +77,12 @@ contract Marketplace is Ownable, Pausable {
 
   // TODO: have to create getter for version and payment because services auto-generated getter doesn't return array of struct
   function getServiceVersion(uint serviceIndex, uint versionIndex) public view returns (bytes20 hash, bytes memory url) {
-    Version memory version = services[serviceIndex].versions[versionIndex];
+    Version storage version = services[serviceIndex].versions[versionIndex];
     return (version.hash, version.url);
   }
 
   function getServicePayment(uint serviceIndex, uint paymentIndex) public view returns (address purchaser) {
-    Payment memory payment = services[serviceIndex].payments[paymentIndex];
+    Payment storage payment = services[serviceIndex].payments[paymentIndex];
     return payment.purchaser;
   }
 
@@ -98,7 +98,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function getServiceVersionIndex(uint serviceIndex, bytes20 hash) public view returns (uint versionIndex) {
-    Service memory service = services[serviceIndex];
+    Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.versions.length; i++) {
       if (service.versions[i].hash == hash) {
         return i;
@@ -108,7 +108,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function getServicePaymentIndex(uint serviceIndex, address purchaser) public view returns (uint paymentIndex) {
-    Service memory service = services[serviceIndex];
+    Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.payments.length; i++) {
       if (service.payments[i].purchaser == purchaser) {
         return i;
@@ -187,7 +187,7 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   function hasPaid(uint serviceIndex) public view returns (bool paid) {
-    Service memory service = services[serviceIndex];
+    Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.payments.length; i++) {
       if (service.payments[i].purchaser == msg.sender) {
         return true;
