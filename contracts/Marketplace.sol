@@ -45,6 +45,7 @@ contract Marketplace is Ownable, Pausable {
   // TODO: indexed on bytes20 transform it as bytes32
   // TODO: indexed on bytes transform it to something else
   // TODO: apply same logic for event data and index
+  // TODO: should event have service index, version index?
   event ServiceCreated(uint serviceIndex, bytes sid, address indexed owner, uint price);
 
   event ServiceOwnershipTransferred(uint serviceIndex, bytes sid, address indexed previousOwner, address indexed newOwner);
@@ -68,7 +69,8 @@ contract Marketplace is Ownable, Pausable {
   // Utils functions
   // ------------------------------------------------------
 
-  // TODO: test if first variable should be a storage because its always coming from a storage data
+  // TODO: test if first variable should be a storage because
+  // its always coming from a storage data but have to remove "pure"
   function compareBytes(bytes memory a, bytes memory b) internal pure returns (bool) {
     return keccak256(a) == keccak256(b);
   }
@@ -196,6 +198,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function pay(uint serviceIndex) public payable whenNotPaused returns (uint paymentIndex) {
+    // TODO: purchaser should not be able to pay 2 times
     Service storage service = services[serviceIndex];
     require(service.price == msg.value, "The service's price is different than the value of this transaction");
     service.owner.transfer(msg.value);
