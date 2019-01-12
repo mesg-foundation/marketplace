@@ -60,7 +60,7 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   modifier onlyServiceOwner(uint serviceIndex) {
-    require(services[serviceIndex].owner == msg.sender, "Service owner is not the same as the sender");
+    require(isServiceOwner(serviceIndex), "Service owner is not the same as the sender");
     _;
   }
 
@@ -76,6 +76,10 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
   // View functions
   // ------------------------------------------------------
+
+  function isServiceOwner(uint serviceIndex) public view returns (bool) {
+    return services[serviceIndex].owner == msg.sender;
+  }
 
   // TODO: have to create getter for version and payment because services auto-generated getter doesn't return array of struct
   function getServiceVersion(uint serviceIndex, uint versionIndex) public view returns (bytes20 hash, bytes memory url) {
@@ -166,6 +170,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
+  // TODO: should check if hash doesn't already exist in ANY service
   function createServiceVersion (uint serviceIndex, bytes20 hash, bytes memory url) public whenNotPaused onlyServiceOwner(serviceIndex) returns (uint versionIndex) {
     Service storage service = services[serviceIndex];
     service.versions.push(Version({
