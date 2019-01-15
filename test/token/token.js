@@ -2,7 +2,7 @@
 /* global contract, artifacts */
 
 const assert = require('chai').assert
-const utils = require('./utils')
+const utils = require('../utils')
 const Token = artifacts.require('Token')
 
 const name = 'MESG Token'
@@ -10,13 +10,15 @@ const symbol = 'MESG'
 const decimals = 18
 const totalSupply = 250000000
 const calculatedTotalSupply = utils.BN(totalSupply).mul(utils.BN(10).pow(utils.BN(decimals)))
+const newDefaultToken = (owner) => Token.new(name, symbol, decimals, totalSupply, { from: owner })
 
-module.exports = { name, symbol, decimals, totalSupply }
+module.exports = { name, symbol, decimals, totalSupply, newDefaultToken }
 
-let token = null
 contract('Token', async ([ contractOwner, other ]) => {
+  let token = null
+
   before(async () => {
-    token = await Token.new(name, symbol, decimals, totalSupply, { from: contractOwner })
+    token = await newDefaultToken(contractOwner)
   })
 
   it('should have the right supply', async () => {

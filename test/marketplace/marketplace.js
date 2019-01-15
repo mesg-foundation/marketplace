@@ -3,8 +3,8 @@
 
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
-const utils = require('./utils')
-const tokenData = require('./token')
+const utils = require('../utils')
+const tokenData = require('../token/token')
 
 const Marketplace = artifacts.require('Marketplace')
 const Token = artifacts.require('Token')
@@ -102,12 +102,13 @@ const versionNotExisting = {
 
 const purchaserInitialBalance = 1000000
 
+module.exports = { sid, version, price }
+
 let marketplace = null
 let token = null
 
 contract('Marketplace', async ([
   contractOwner,
-  contractOwner2,
   developer,
   developer2,
   purchaser,
@@ -118,107 +119,6 @@ contract('Marketplace', async ([
     token = await Token.new(tokenData.name, tokenData.symbol, tokenData.decimals, tokenData.totalSupply, { from: contractOwner })
     await token.transfer(purchaser, purchaserInitialBalance, { from: contractOwner })
     await token.transfer(purchaser2, purchaserInitialBalance, { from: contractOwner })
-  })
-
-  // TODO: to facto and test on token
-  describe('contract ownership', async () => {
-    before(async () => {
-      marketplace = await Marketplace.new(token.address, { from: contractOwner })
-    })
-
-    it('original owner should have the ownership', async () => {
-      assert.isTrue(await marketplace.isOwner({ from: contractOwner }))
-    })
-
-    it('other should not have the ownership', async () => {
-      assert.isFalse(await marketplace.isOwner({ from: other }))
-    })
-
-    it('should transfer ownership', async () => {
-      const tx = await marketplace.transferOwnership(contractOwner2, { from: contractOwner })
-      truffleAssert.eventEmitted(tx, 'OwnershipTransferred')
-    })
-
-    it('original owner should not have the ownership', async () => {
-      assert.isFalse(await marketplace.isOwner({ from: contractOwner }))
-    })
-
-    it('new owner should have the ownership', async () => {
-      assert.isTrue(await marketplace.isOwner({ from: contractOwner2 }))
-    })
-  })
-
-  // TODO: to facto and test on token
-  describe('contract pauser', async () => {
-    before(async () => {
-      marketplace = await Marketplace.new(token.address, { from: contractOwner })
-    })
-
-    it('original owner should be pauser', async () => {
-      assert.isTrue(await marketplace.isPauser(contractOwner))
-    })
-
-    it('other should not be pauser', async () => {
-      assert.isFalse(await marketplace.isPauser(other))
-    })
-
-    it('should add pauser role', async () => {
-      const tx = await marketplace.addPauser(contractOwner2, { from: contractOwner })
-      truffleAssert.eventEmitted(tx, 'PauserAdded')
-    })
-
-    it('should remove pauser role', async () => {
-      const tx = await marketplace.renouncePauser({ from: contractOwner })
-      truffleAssert.eventEmitted(tx, 'PauserRemoved')
-    })
-
-    it('previous owner should not be pauser', async () => {
-      assert.isFalse(await marketplace.isPauser(contractOwner))
-    })
-
-    it('new owner should be pauser', async () => {
-      assert.isTrue(await marketplace.isPauser(contractOwner2))
-    })
-  })
-
-  // TODO: to facto and test on token
-  describe('pause contract', async () => {
-    before(async () => {
-      marketplace = await Marketplace.new(token.address, { from: contractOwner })
-    })
-
-    it('should pause', async () => {
-      assert.equal(await marketplace.paused(), false)
-      const tx = await marketplace.pause({ from: contractOwner })
-      truffleAssert.eventEmitted(tx, 'Paused')
-      assert.equal(await marketplace.paused(), true)
-    })
-
-    it('should unpause', async () => {
-      assert.equal(await marketplace.paused(), true)
-      const tx = await marketplace.unpause({ from: contractOwner })
-      truffleAssert.eventEmitted(tx, 'Unpaused')
-      assert.equal(await marketplace.paused(), false)
-    })
-
-    describe('test modifier whenNotPaused', async () => {
-      before(async () => {
-        await marketplace.pause({ from: contractOwner })
-      })
-
-      it('should not be able to transfer service ownership', async () => {
-        await truffleAssert.reverts(marketplace.createService(utils.asciiToHex(sid), price, { from: developer }))
-      })
-      it('should not be able to transfer service ownership', async () => {
-        await truffleAssert.reverts(marketplace.transferServiceOwnership(0, other, { from: developer }))
-      })
-      it('should not be able to change service price', async () => {
-        await truffleAssert.reverts(marketplace.changeServicePrice(0, price, { from: developer }))
-      })
-      it('should not be able to create a service version', async () => {
-        await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, utils.asciiToHex(version.url), { from: developer }))
-      })
-    })
   })
 
   describe('marketplace', async () => {
