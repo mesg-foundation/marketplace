@@ -368,6 +368,7 @@ contract('Marketplace', async accounts => {
 
       it('should have paid service', async () => {
         assert.equal(await marketplace.hasPaid(0, { from: purchaser }), true)
+        assert.equal(await marketplace.getServicePaymentsCount(0), 1)
         const _payment = await marketplace.getServicePayment(0, 0)
         assertServicePayment(_payment, purchaser)
       })
