@@ -56,10 +56,11 @@ const assertEventServiceOwnershipTransferred = (tx, serviceIndex, sid, previousO
 }
 
 // Service version
-const assertEventServiceVersionCreated = (tx, serviceIndex, versionHash, versionUrl) => {
+const assertEventServiceVersionCreated = (tx, serviceIndex, sid, versionHash, versionUrl) => {
   truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
   const event = tx.logs[0].args
   assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
+  assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.hash, versionHash)
   assert.equal(hexToAscii(event.url), versionUrl)
 }
@@ -69,12 +70,13 @@ const assertServiceVersion = (version, versionHash, versionUrl) => {
 }
 
 // Service payment
-const assertEventServicePaid = (tx, serviceIndex, sid, price, purchaser) => {
+const assertEventServicePaid = (tx, serviceIndex, sid, price, purchaser, seller) => {
   truffleAssert.eventEmitted(tx, 'ServicePaid')
   const event = tx.logs[0].args
   assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
   assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.purchaser, purchaser)
+  assert.equal(event.seller, seller)
   assert.equal(event.price, price)
 }
 const assertServicePayment = (payment, purchaser) => {
@@ -249,7 +251,7 @@ contract('Marketplace', async accounts => {
     describe('service version', async () => {
       it('should create a version', async () => {
         const tx = await marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer })
-        assertEventServiceVersionCreated(tx, 0, version.hash, version.url)
+        assertEventServiceVersionCreated(tx, 0, sid, version.hash, version.url)
       })
 
       it('should have one version', async () => {
@@ -260,7 +262,7 @@ contract('Marketplace', async accounts => {
 
       it('should create an other version', async () => {
         const tx = await marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.url), { from: developer })
-        assertEventServiceVersionCreated(tx, 0, version2.hash, version2.url)
+        assertEventServiceVersionCreated(tx, 0, sid, version2.hash, version2.url)
       })
 
       it('should have two version', async () => {
@@ -289,7 +291,7 @@ contract('Marketplace', async accounts => {
 
       it('should pay a service', async () => {
         const tx = await marketplace.pay(0, { from: purchaser, value: price2 })
-        assertEventServicePaid(tx, 0, sid, price2, purchaser)
+        assertEventServicePaid(tx, 0, sid, price2, purchaser, developer)
       })
 
       it('should have paid service', async () => {

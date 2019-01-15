@@ -42,19 +42,41 @@ contract Marketplace is Ownable, Pausable {
   // Events
   // ------------------------------------------------------
 
-  // TODO: indexed on bytes20 transform it as bytes32
-  // TODO: indexed on bytes transform it to something else
-  // TODO: apply same logic for event data and index
-  // TODO: should event have service index, version index?
-  event ServiceCreated(uint serviceIndex, bytes sid, address indexed owner, uint price);
+  event ServiceCreated(
+    uint indexed serviceIndex,
+    bytes sid,
+    address indexed owner,
+    uint price
+  );
 
-  event ServiceOwnershipTransferred(uint serviceIndex, bytes sid, address indexed previousOwner, address indexed newOwner);
+  event ServiceOwnershipTransferred(
+    uint indexed serviceIndex,
+    bytes sid,
+    address indexed previousOwner,
+    address indexed newOwner
+  );
 
-  event ServicePriceChanged(uint serviceIndex, bytes sid, uint previousPrice, uint newPrice);
+  event ServicePriceChanged(
+    uint indexed serviceIndex,
+    bytes sid,
+    uint previousPrice,
+    uint newPrice
+  );
 
-  event ServiceVersionCreated(uint serviceIndex, bytes20 hash, bytes url);
+  event ServiceVersionCreated(
+    uint indexed serviceIndex,
+    bytes sid,
+    bytes20 hash,
+    bytes url
+  );
 
-  event ServicePaid(uint serviceIndex, bytes sid, address indexed purchaser, address indexed seller, uint price);
+  event ServicePaid(
+    uint indexed serviceIndex,
+    bytes sid,
+    address indexed purchaser,
+    address indexed seller,
+    uint price
+  );
 
   // ------------------------------------------------------
   // Modifier functions
@@ -173,19 +195,34 @@ contract Marketplace is Ownable, Pausable {
     service.sid = sid;
     service.price = price;
     service.owner = msg.sender;
-    emit ServiceCreated(services.length - 1, service.sid, service.owner, service.price);
+    emit ServiceCreated(
+      services.length - 1,
+      service.sid,
+      service.owner,
+      service.price
+    );
     return services.length - 1;
   }
 
   function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused onlyServiceOwner(serviceIndex) {
     Service storage service = services[serviceIndex];
-    emit ServiceOwnershipTransferred(serviceIndex, service.sid, service.owner, newOwner);
+    emit ServiceOwnershipTransferred(
+      serviceIndex,
+      service.sid,
+      service.owner,
+      newOwner
+    );
     service.owner = newOwner;
   }
 
   function changeServicePrice (uint serviceIndex, uint newPrice) public whenNotPaused onlyServiceOwner(serviceIndex) {
     Service storage service = services[serviceIndex];
-    emit ServicePriceChanged(serviceIndex, service.sid, service.price, newPrice);
+    emit ServicePriceChanged(
+      serviceIndex,
+      service.sid,
+      service.price,
+      newPrice
+    );
     service.price = newPrice;
   }
 
@@ -198,7 +235,12 @@ contract Marketplace is Ownable, Pausable {
       hash: hash,
       url: url
     }));
-    emit ServiceVersionCreated(serviceIndex, hash, url);
+    emit ServiceVersionCreated(
+      serviceIndex,
+      service.sid,
+      hash,
+      url
+    );
     return service.versions.length - 1;
   }
 
@@ -225,7 +267,13 @@ contract Marketplace is Ownable, Pausable {
     service.payments.push(Payment({
       purchaser: msg.sender
     }));
-    emit ServicePaid(serviceIndex, service.sid, msg.sender, service.owner, service.price);
+    emit ServicePaid(
+      serviceIndex,
+      service.sid,
+      msg.sender,
+      service.owner,
+      service.price
+    );
     return service.payments.length - 1;
   }
 }
