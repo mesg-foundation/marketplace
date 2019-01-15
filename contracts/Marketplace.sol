@@ -91,8 +91,6 @@ contract Marketplace is Ownable, Pausable {
   // Utils functions
   // ------------------------------------------------------
 
-  // TODO: test if first variable should be a storage because
-  // its always coming from a storage data but have to remove "pure"
   function compareBytes(bytes memory a, bytes memory b) internal pure returns (bool) {
     return keccak256(a) == keccak256(b);
   }
@@ -205,7 +203,9 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused onlyServiceOwner(serviceIndex) {
+    require(newOwner != address(0), "New Owner cannot be address 0");
     Service storage service = services[serviceIndex];
+    require(newOwner != service.owner, "New Owner is already current owner");
     emit ServiceOwnershipTransferred(
       serviceIndex,
       service.sid,

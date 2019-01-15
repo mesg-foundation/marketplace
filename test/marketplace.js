@@ -21,6 +21,8 @@ const errorServicePaymentNotFound = 'Payment not found'
 const errorServiceVersionHashAlreadyExist = 'Version\'s hash already exists'
 const errorServicePaymentAlreadyPaid = 'You already paid for this service'
 const errorServicePaymentWrongPrice = 'The service\'s price is different than the value of this transaction'
+const errorTransferOwnershipAddress0 = 'New Owner cannot be address 0'
+const errorTransferOwnershipSameAddress = 'New Owner is already current owner'
 
 // Assert functions
 
@@ -339,6 +341,14 @@ contract('Marketplace', async accounts => {
       it('original owner should not have the service ownership', async () => {
         assert.equal(await marketplace.getServicesCount(), 1)
         assert.isFalse(await marketplace.isServiceOwner(0, { from: developer }))
+      })
+
+      it('should fail when new owner owner is address 0', async () => {
+        await truffleAssert.reverts(marketplace.transferServiceOwnership(0, '0x0000000000000000000000000000000000000000', { from: developer2 }), errorTransferOwnershipAddress0)
+      })
+
+      it('should fail when new owner owner is the same as current owner', async () => {
+        await truffleAssert.reverts(marketplace.transferServiceOwnership(0, developer2, { from: developer2 }), errorTransferOwnershipSameAddress)
       })
 
       describe('test modifier onlyServiceOwner', async () => {
