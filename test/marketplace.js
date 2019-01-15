@@ -1,10 +1,12 @@
 /* eslint-env mocha */
 /* global contract, artifacts */
 
-const Marketplace = artifacts.require('Marketplace')
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
 const web3 = require('web3')
+
+const Marketplace = artifacts.require('Marketplace')
+const Token = artifacts.require('Token')
 
 const hexToAscii = x => web3.utils.hexToAscii(x).replace(/\u0000/g, '')
 const asciiToHex = x => web3.utils.asciiToHex(x)
@@ -84,6 +86,59 @@ const assertEventServicePaid = (tx, serviceIndex, sid, price, purchaser, seller)
 const assertServicePayment = (payment, purchaser) => {
   assert.equal(payment, purchaser)
 }
+
+let token = null
+contract('Token', async accounts => {
+  const [
+    contractOwner,
+    contractOwner2,
+    developer,
+    developer2,
+    purchaser,
+    purchaser2,
+    other
+  ] = accounts
+
+  const tokenData = {
+    name: 'MESG Token',
+    symbol: 'MESG',
+    decimals: 18,
+    totalSupply: 250000000
+  }
+
+  before(async () => {
+    token = await Token.new(tokenData.name, tokenData.symbol, tokenData.decimals, tokenData.totalSupply, { from: contractOwner })
+  })
+
+  it('should have the right supply', async () => {
+    const totalSupply = await token.totalSupply()
+    const calculatedTotalSupply = BN(tokenData.totalSupply).mul(BN(10).pow(BN(tokenData.decimals)))
+    assert.isTrue(totalSupply.eq(calculatedTotalSupply))
+  })
+
+  it('should have the right name', async () => {
+    assert.equal(await token.name(), tokenData.name)
+  })
+
+  it('should have the right symbol', async () => {
+    assert.equal(await token.symbol(), tokenData.symbol)
+  })
+
+  it('should have the right decimals', async () => {
+    assert.equal(await token.decimals(), tokenData.decimals)
+  })
+
+  it('creator should have all the supply', async () => {
+    const balanceOf = await token.balanceOf(contractOwner)
+    const calculatedTotalSupply = BN(tokenData.totalSupply).mul(BN(10).pow(BN(tokenData.decimals)))
+    assert.isTrue(balanceOf.eq(calculatedTotalSupply))
+  })
+
+  it('other should have 0 token', async () => {
+    const balanceOf = await token.balanceOf(other)
+    assert.isTrue(balanceOf.eq(BN(0)))
+  })
+})
 
 contract('Marketplace', async accounts => {
   const [
