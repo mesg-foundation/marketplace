@@ -33,14 +33,14 @@ contract Marketplace is Ownable, Pausable {
 
   Service[] public services;
 
-  IERC20 public tokenAddress;
+  IERC20 public token;
 
   // ------------------------------------------------------
   // Constructor
   // ------------------------------------------------------
 
-  constructor(IERC20 _tokenAddress) public {
-    tokenAddress = _tokenAddress;
+  constructor(IERC20 _token) public {
+    token = _token;
   }
 
   // ------------------------------------------------------
@@ -275,12 +275,12 @@ contract Marketplace is Ownable, Pausable {
   function pay(uint serviceIndex) public payable whenNotPaused returns (uint paymentIndex) {
     require(!hasPaid(serviceIndex), "Sender already paid for this service");
     Service storage service = services[serviceIndex];
-    require(tokenAddress.balanceOf(msg.sender) >= service.price, "Sender doesn't have enough balance to pay this service");
+    require(token.balanceOf(msg.sender) >= service.price, "Sender doesn't have enough balance to pay this service");
     require(
-      tokenAddress.allowance(msg.sender, address(this)) >= service.price,
+      token.allowance(msg.sender, address(this)) >= service.price,
       "Sender didn't approve this contract to spend on his behalf. Execute approve function on the token contract"
     );
-    tokenAddress.transferFrom(msg.sender, service.owner, service.price);
+    token.transferFrom(msg.sender, service.owner, service.price);
     service.payments.push(Payment({
       purchaser: msg.sender
     }));
