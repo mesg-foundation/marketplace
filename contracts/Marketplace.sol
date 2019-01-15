@@ -130,19 +130,19 @@ contract Marketplace is Ownable, Pausable {
 
   // Getters
 
-  function getServiceVersion(uint serviceIndex, uint versionIndex) public view returns (bytes20 hash, bytes memory url) {
+  function getServiceVersion(uint serviceIndex, uint versionIndex) external view returns (bytes20 hash, bytes memory url) {
     Version storage version = services[serviceIndex].versions[versionIndex];
     return (version.hash, version.url);
   }
 
-  function getServicePayment(uint serviceIndex, uint paymentIndex) public view returns (address purchaser) {
+  function getServicePayment(uint serviceIndex, uint paymentIndex) external view returns (address purchaser) {
     Payment storage payment = services[serviceIndex].payments[paymentIndex];
     return payment.purchaser;
   }
 
   // Index
 
-  function getServiceIndex(bytes memory sid) public view returns (uint) {
+  function getServiceIndex(bytes calldata sid) external view returns (uint) {
     for (uint i = 0; i < services.length; i++) {
       if (compareBytes(services[i].sid, sid)) {
         return i;
@@ -151,7 +151,7 @@ contract Marketplace is Ownable, Pausable {
     require(false, "Service not found");
   }
 
-  function getServiceVersionIndex(uint serviceIndex, bytes20 hash) public view returns (uint) {
+  function getServiceVersionIndex(uint serviceIndex, bytes20 hash) external view returns (uint) {
     Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.versions.length; i++) {
       if (service.versions[i].hash == hash) {
@@ -161,7 +161,7 @@ contract Marketplace is Ownable, Pausable {
     require(false, "Version not found");
   }
 
-  function getServicePaymentIndex(uint serviceIndex, address purchaser) public view returns (uint) {
+  function getServicePaymentIndex(uint serviceIndex, address purchaser) external view returns (uint) {
     Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.payments.length; i++) {
       if (service.payments[i].purchaser == purchaser) {
@@ -173,15 +173,15 @@ contract Marketplace is Ownable, Pausable {
 
   // Count
 
-  function getServicesCount() public view returns (uint servicesCount) {
+  function getServicesCount() external view returns (uint servicesCount) {
     return services.length;
   }
 
-  function getServiceVersionsCount(uint serviceIndex) public view returns (uint) {
+  function getServiceVersionsCount(uint serviceIndex) external view returns (uint) {
     return services[serviceIndex].versions.length;
   }
 
-  function getServicePaymentsCount(uint serviceIndex) public view returns (uint) {
+  function getServicePaymentsCount(uint serviceIndex) external view returns (uint) {
     return services[serviceIndex].payments.length;
   }
 
@@ -191,7 +191,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Service
 
-  function createService (bytes memory sid, uint256 price) public whenNotPaused returns (uint serviceIndex) {
+  function createService (bytes calldata sid, uint256 price) external whenNotPaused returns (uint serviceIndex) {
     require(!isServiceSidExist(sid), "Service's sid is already used");
     services.length++;
     Service storage service = services[services.length - 1];
@@ -207,7 +207,7 @@ contract Marketplace is Ownable, Pausable {
     return services.length - 1;
   }
 
-  function transferServiceOwnership (uint serviceIndex, address newOwner) public whenNotPaused onlyServiceOwner(serviceIndex) {
+  function transferServiceOwnership (uint serviceIndex, address newOwner) external whenNotPaused onlyServiceOwner(serviceIndex) {
     require(newOwner != address(0), "New Owner cannot be address 0");
     Service storage service = services[serviceIndex];
     require(newOwner != service.owner, "New Owner is already current owner");
@@ -220,7 +220,7 @@ contract Marketplace is Ownable, Pausable {
     service.owner = newOwner;
   }
 
-  function changeServicePrice (uint serviceIndex, uint256 newPrice) public whenNotPaused onlyServiceOwner(serviceIndex) {
+  function changeServicePrice (uint serviceIndex, uint256 newPrice) external whenNotPaused onlyServiceOwner(serviceIndex) {
     Service storage service = services[serviceIndex];
     emit ServicePriceChanged(
       serviceIndex,
@@ -233,8 +233,8 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes memory url)
-    public
+  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes calldata url)
+    external
     whenNotPaused
     onlyServiceOwner(serviceIndex)
   returns (uint versionIndex) {
@@ -267,7 +267,7 @@ contract Marketplace is Ownable, Pausable {
     return false;
   }
 
-  function pay(uint serviceIndex) public payable whenNotPaused returns (uint paymentIndex) {
+  function pay(uint serviceIndex) external whenNotPaused returns (uint paymentIndex) {
     require(!hasPaid(serviceIndex), "Sender already paid for this service");
     Service storage service = services[serviceIndex];
     require(token.balanceOf(msg.sender) >= service.price, "Sender doesn't have enough balance to pay this service");
