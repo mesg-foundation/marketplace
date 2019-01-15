@@ -1,6 +1,8 @@
 /* eslint-env mocha */
 /* global contract, artifacts */
 
+// TODO: install https://www.npmjs.com/package/eth-gas-reporter
+
 const Marketplace = artifacts.require('Marketplace')
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
@@ -15,10 +17,13 @@ const isBN = x => web3.utils.isBN(x)
 
 // Errors from contract
 const errorServiceOwner = 'Service owner is not the same as the sender'
-const errorServiceSidAlreadyUsed = 'Sid is already used'
+const errorServiceSidAlreadyUsed = 'Service\'s sid is already used'
 const errorServiceNotFound = 'Service not found'
 const errorServiceVersionNotFound = 'Version not found'
 const errorServicePaymentNotFound = 'Payment not found'
+const errorServiceVersionHashAlreadyExist = 'Version\'s hash already exists'
+const errorServicePaymentAlreadyPaid = 'You already paid for this service'
+const errorServicePaymentWrongPrice = 'The service\'s price is different than the value of this transaction'
 
 // Assert functions
 
@@ -172,8 +177,9 @@ contract('Marketplace', async accounts => {
     // TODO: add ALL function that use whenNotPaused modifier
   })
 
-  describe('create service', async () => {
-    const sid = 'test-create-service-0'
+  describe('marketplace', async () => {
+    const sid = 'test-service-0'
+    const sidNotExist = 'test-service-not-exist'
     const price = 1000000000
     const price2 = 2000000000
     const version = {
@@ -183,6 +189,10 @@ contract('Marketplace', async accounts => {
     const version2 = {
       hash: '0xb444c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
       url: 'https://get.com/core.tar'
+    }
+    const versionNotExisting = {
+      hash: '0xc5555c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
+      url: 'https://notFound.com/core.tar'
     }
 
     before(async () => {
@@ -196,8 +206,17 @@ contract('Marketplace', async accounts => {
       })
 
       it('should have one service', async () => {
-        const service = await marketplace.services(0)
+        const serviceIndex = await marketplace.getServiceIndex(asciiToHex(sid))
+        const service = await marketplace.services(serviceIndex)
         assertService(service, sid, price, developer)
+      })
+
+      it('should not be able to create a service with existing sid', async () => {
+        await truffleAssert.reverts(marketplace.createService(asciiToHex(sid), price, { from: developer2 }), errorServiceSidAlreadyUsed)
+      })
+
+      it('should fail when getting service with not existing sid', async () => {
+        await truffleAssert.reverts(marketplace.getServiceIndex(asciiToHex(sidNotExist)), errorServiceNotFound)
       })
     })
 
@@ -240,9 +259,21 @@ contract('Marketplace', async accounts => {
         const _version2 = await marketplace.getServiceVersion(0, 1)
         assertServiceVersion(_version2, version2.hash, version2.url)
       })
+
+      it('should not be able to create a version with same hash', async () => {
+        await truffleAssert.reverts(marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.url), { from: developer }), errorServiceVersionHashAlreadyExist)
+      })
+
+      it('should fail when getting service version with not existing hash', async () => {
+        await truffleAssert.reverts(marketplace.getServiceVersionIndex(0, versionNotExisting.hash), errorServiceVersionNotFound)
+      })
     })
 
     describe('service payment', async () => {
+      it('should have not paid service', async () => {
+        assert.equal(await marketplace.hasPaid(0, { from: purchaser }), false)
+      })
+
       it('should pay a service', async () => {
         const tx = await marketplace.pay(0, { from: purchaser, value: price2 })
         assertEventServicePaid(tx, 0, sid, price2, purchaser)
@@ -252,6 +283,18 @@ contract('Marketplace', async accounts => {
         assert.equal(await marketplace.hasPaid(0, { from: purchaser }), true)
         const _payment = await marketplace.getServicePayment(0, 0)
         assertServicePayment(_payment, purchaser)
+      })
+
+      it('should not be able to pay twice the same service', async () => {
+        await truffleAssert.reverts(marketplace.pay(0, { from: purchaser, value: price2 }), errorServicePaymentAlreadyPaid)
+      })
+
+      it('should not be able to pay with a wrong price', async () => {
+        await truffleAssert.reverts(marketplace.pay(0, { from: purchaser2, value: price }), errorServicePaymentWrongPrice)
+      })
+
+      it('should fail when getting service payment with not existing purchaser', async () => {
+        await truffleAssert.reverts(marketplace.getServicePaymentIndex(0, other), errorServicePaymentNotFound)
       })
     })
 

@@ -83,7 +83,28 @@ contract Marketplace is Ownable, Pausable {
     return services[serviceIndex].owner == msg.sender;
   }
 
-  // TODO: have to create getter for version and payment because services auto-generated getter doesn't return array of struct
+  function isServiceSidExist(bytes memory sid) public view returns (bool) {
+    for (uint i = 0; i < services.length; i++) {
+      if (compareBytes(services[i].sid, sid)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function isServiceHashExist(bytes20 hash) public view returns (bool) {
+    for (uint serviceIndex = 0; serviceIndex < services.length; serviceIndex++) {
+      for (uint versionIndex = 0; versionIndex < services[serviceIndex].versions.length; versionIndex++) {
+        if (services[serviceIndex].versions[versionIndex].hash == hash) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // Getters
+
   function getServiceVersion(uint serviceIndex, uint versionIndex) public view returns (bytes20 hash, bytes memory url) {
     Version storage version = services[serviceIndex].versions[versionIndex];
     return (version.hash, version.url);
@@ -146,9 +167,7 @@ contract Marketplace is Ownable, Pausable {
   // Manage Service
 
   function createService (bytes memory sid, uint price) public whenNotPaused returns (uint serviceIndex) {
-    for (uint i = 0; i < services.length; i++) {
-      require(!compareBytes(services[i].sid, sid), "Sid is already used");
-    }
+    require(!isServiceSidExist(sid), "Service's sid is already used");
     services.length++;
     Service storage service = services[services.length - 1];
     service.sid = sid;
@@ -172,8 +191,8 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  // TODO: should check if hash doesn't already exist in ANY service
   function createServiceVersion (uint serviceIndex, bytes20 hash, bytes memory url) public whenNotPaused onlyServiceOwner(serviceIndex) returns (uint versionIndex) {
+    require(!isServiceHashExist(hash), "Version's hash already exists");
     Service storage service = services[serviceIndex];
     service.versions.push(Version({
       hash: hash,
@@ -197,8 +216,9 @@ contract Marketplace is Ownable, Pausable {
     return false;
   }
 
+  // TODO: implement ERC20
   function pay(uint serviceIndex) public payable whenNotPaused returns (uint paymentIndex) {
-    // TODO: purchaser should not be able to pay 2 times
+    require(!hasPaid(serviceIndex), "You already paid for this service");
     Service storage service = services[serviceIndex];
     require(service.price == msg.value, "The service's price is different than the value of this transaction");
     service.owner.transfer(msg.value);
