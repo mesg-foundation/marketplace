@@ -233,16 +233,11 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  function createServiceVersion (
-    uint serviceIndex,
-    bytes20 hash,
-    bytes memory url
-  )
+  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes memory url)
     public
     whenNotPaused
     onlyServiceOwner(serviceIndex)
-    returns (uint versionIndex)
-  {
+  returns (uint versionIndex) {
     require(!isServiceHashExist(hash), "Version's hash already exists");
     Service storage service = services[serviceIndex];
     service.versions.push(Version({
