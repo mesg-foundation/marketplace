@@ -142,7 +142,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Index
 
-  function getServiceIndex(bytes memory sid) public view returns (uint serviceIndex) {
+  function getServiceIndex(bytes memory sid) public view returns (uint) {
     for (uint i = 0; i < services.length; i++) {
       if (compareBytes(services[i].sid, sid)) {
         return i;
@@ -151,7 +151,7 @@ contract Marketplace is Ownable, Pausable {
     require(false, "Service not found");
   }
 
-  function getServiceVersionIndex(uint serviceIndex, bytes20 hash) public view returns (uint versionIndex) {
+  function getServiceVersionIndex(uint serviceIndex, bytes20 hash) public view returns (uint) {
     Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.versions.length; i++) {
       if (service.versions[i].hash == hash) {
@@ -161,7 +161,7 @@ contract Marketplace is Ownable, Pausable {
     require(false, "Version not found");
   }
 
-  function getServicePaymentIndex(uint serviceIndex, address purchaser) public view returns (uint paymentIndex) {
+  function getServicePaymentIndex(uint serviceIndex, address purchaser) public view returns (uint) {
     Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.payments.length; i++) {
       if (service.payments[i].purchaser == purchaser) {
@@ -177,11 +177,11 @@ contract Marketplace is Ownable, Pausable {
     return services.length;
   }
 
-  function getServiceVersionsCount(uint serviceIndex) public view returns (uint serviceVersionsCount) {
+  function getServiceVersionsCount(uint serviceIndex) public view returns (uint) {
     return services[serviceIndex].versions.length;
   }
 
-  function getServicePaymentsCount(uint serviceIndex) public view returns (uint servicePaymentsCount) {
+  function getServicePaymentsCount(uint serviceIndex) public view returns (uint) {
     return services[serviceIndex].payments.length;
   }
 
