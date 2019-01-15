@@ -1,19 +1,16 @@
 /* eslint-env mocha */
 /* global contract, artifacts */
 
-// TODO: install https://www.npmjs.com/package/eth-gas-reporter
-
 const Marketplace = artifacts.require('Marketplace')
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
 const web3 = require('web3')
 
 const hexToAscii = x => web3.utils.hexToAscii(x).replace(/\u0000/g, '')
-const padRight = x => web3.utils.padRight(x, 64)
 const asciiToHex = x => web3.utils.asciiToHex(x)
-const hexToNumber = x => web3.utils.hexToNumber(x)
 const BN = x => new web3.utils.BN(x)
-const isBN = x => web3.utils.isBN(x)
+// const padRight = x => web3.utils.padRight(x, 64)
+// const hexToNumber = x => web3.utils.hexToNumber(x)
 
 // Errors from contract
 const errorServiceOwner = 'Service owner is not the same as the sender'
@@ -94,6 +91,22 @@ contract('Marketplace', async accounts => {
     purchaser2,
     other
   ] = accounts
+  const sid = 'test-service-0'
+  const sidNotExist = 'test-service-not-exist'
+  const price = 1000000000
+  const price2 = 2000000000
+  const version = {
+    hash: '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
+    url: 'https://download.com/core.tar'
+  }
+  const version2 = {
+    hash: '0xb444c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
+    url: 'https://get.com/core.tar'
+  }
+  const versionNotExisting = {
+    hash: '0xc5555c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
+    url: 'https://notFound.com/core.tar'
+  }
   let marketplace = null
 
   describe('contract ownership', async () => {
@@ -174,27 +187,27 @@ contract('Marketplace', async accounts => {
       assert.equal(await marketplace.paused(), false)
     })
 
-    // TODO: add ALL function that use whenNotPaused modifier
+    describe('test modifier whenNotPaused', async () => {
+      before(async () => {
+        await marketplace.pause({ from: contractOwner })
+      })
+
+      it('should not be able to transfer service ownership', async () => {
+        await truffleAssert.reverts(marketplace.createService(asciiToHex(sid), price, { from: developer }))
+      })
+      it('should not be able to transfer service ownership', async () => {
+        await truffleAssert.reverts(marketplace.transferServiceOwnership(0, other, { from: developer }))
+      })
+      it('should not be able to change service price', async () => {
+        await truffleAssert.reverts(marketplace.changeServicePrice(0, price, { from: developer }))
+      })
+      it('should not be able to create a service version', async () => {
+        await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer }))
+      })
+    })
   })
 
   describe('marketplace', async () => {
-    const sid = 'test-service-0'
-    const sidNotExist = 'test-service-not-exist'
-    const price = 1000000000
-    const price2 = 2000000000
-    const version = {
-      hash: '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
-      url: 'https://download.com/core.tar'
-    }
-    const version2 = {
-      hash: '0xb444c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
-      url: 'https://get.com/core.tar'
-    }
-    const versionNotExisting = {
-      hash: '0xc5555c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
-      url: 'https://notFound.com/core.tar'
-    }
-
     before(async () => {
       marketplace = await Marketplace.new()
     })
@@ -326,17 +339,17 @@ contract('Marketplace', async accounts => {
         assert.isFalse(await marketplace.isServiceOwner(0, { from: developer }))
       })
 
-      it('original owner should not be able to transfer service ownership', async () => {
-        await truffleAssert.reverts(marketplace.transferServiceOwnership(0, other, { from: developer }), errorServiceOwner)
+      describe('test modifier onlyServiceOwner', async () => {
+        it('original owner should not be able to transfer service ownership', async () => {
+          await truffleAssert.reverts(marketplace.transferServiceOwnership(0, other, { from: developer }), errorServiceOwner)
+        })
+        it('original owner should not be able to change service price', async () => {
+          await truffleAssert.reverts(marketplace.changeServicePrice(0, price, { from: developer }), errorServiceOwner)
+        })
+        it('original owner should not be able to create a service version', async () => {
+          await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer }), errorServiceOwner)
+        })
       })
-      it('original owner should not be able to change service price', async () => {
-        await truffleAssert.reverts(marketplace.changeServicePrice(0, price, { from: developer }), errorServiceOwner)
-      })
-      it('original owner should not be able to create a service version', async () => {
-        await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer }), errorServiceOwner)
-      })
-
-      // TODO: add ALL function that use onlyServiceOwner modifier
     })
   })
 })
