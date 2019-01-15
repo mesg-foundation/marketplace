@@ -87,7 +87,14 @@ const assertServicePayment = (payment, purchaser) => {
   assert.equal(payment, purchaser)
 }
 
+const tokenData = {
+  name: 'MESG Token',
+  symbol: 'MESG',
+  decimals: 18,
+  totalSupply: 250000000
+}
 let token = null
+
 contract('Token', async accounts => {
   const [
     contractOwner,
@@ -98,13 +105,6 @@ contract('Token', async accounts => {
     purchaser2,
     other
   ] = accounts
-
-  const tokenData = {
-    name: 'MESG Token',
-    symbol: 'MESG',
-    decimals: 18,
-    totalSupply: 250000000
-  }
 
   before(async () => {
     token = await Token.new(tokenData.name, tokenData.symbol, tokenData.decimals, tokenData.totalSupply, { from: contractOwner })
@@ -150,6 +150,7 @@ contract('Marketplace', async accounts => {
     purchaser2,
     other
   ] = accounts
+
   const sid = 'test-service-0'
   const sidNotExist = 'test-service-not-exist'
   const price = 1000000000
@@ -166,11 +167,17 @@ contract('Marketplace', async accounts => {
     hash: '0xc5555c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
     url: 'https://notFound.com/core.tar'
   }
+
   let marketplace = null
 
+  before(async () => {
+    token = await Token.new(tokenData.name, tokenData.symbol, tokenData.decimals, tokenData.totalSupply, { from: contractOwner })
+  })
+
+  // TODO: to facto and test on token
   describe('contract ownership', async () => {
     before(async () => {
-      marketplace = await Marketplace.new({ from: contractOwner })
+      marketplace = await Marketplace.new(token.address, { from: contractOwner })
     })
 
     it('original owner should have the ownership', async () => {
@@ -195,9 +202,10 @@ contract('Marketplace', async accounts => {
     })
   })
 
+  // TODO: to facto and test on token
   describe('contract pauser', async () => {
     before(async () => {
-      marketplace = await Marketplace.new({ from: contractOwner })
+      marketplace = await Marketplace.new(token.address, { from: contractOwner })
     })
 
     it('original owner should be pauser', async () => {
@@ -227,9 +235,10 @@ contract('Marketplace', async accounts => {
     })
   })
 
+  // TODO: to facto and test on token
   describe('pause contract', async () => {
     before(async () => {
-      marketplace = await Marketplace.new()
+      marketplace = await Marketplace.new(token.address, { from: contractOwner })
     })
 
     it('should pause', async () => {
@@ -268,7 +277,7 @@ contract('Marketplace', async accounts => {
 
   describe('marketplace', async () => {
     before(async () => {
-      marketplace = await Marketplace.new()
+      marketplace = await Marketplace.new(token.address, { from: contractOwner })
     })
 
     describe('service creation', async () => {

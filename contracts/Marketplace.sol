@@ -2,6 +2,7 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../node_modules/openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "../node_modules/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
@@ -32,11 +33,15 @@ contract Marketplace is Ownable, Pausable {
 
   Service[] public services;
 
+  IERC20 public tokenAddress;
+
   // ------------------------------------------------------
   // Constructor
   // ------------------------------------------------------
 
-  constructor() public {}
+  constructor(IERC20 _tokenAddress) public {
+    tokenAddress = _tokenAddress;
+  }
 
   // ------------------------------------------------------
   // Events
