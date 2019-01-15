@@ -21,8 +21,9 @@ const errorServiceNotFound = 'Service not found'
 const errorServiceVersionNotFound = 'Version not found'
 const errorServicePaymentNotFound = 'Payment not found'
 const errorServiceVersionHashAlreadyExist = 'Version\'s hash already exists'
-const errorServicePaymentAlreadyPaid = 'You already paid for this service'
-const errorServicePaymentWrongPrice = 'The service\'s price is different than the value of this transaction'
+const errorServicePaymentAlreadyPaid = 'Sender already paid for this service'
+const errorServicePaymentNotEnoughBalance = 'Sender doesn\'t have enough balance to pay this service'
+const errorServicePaymentDidNotAllow = 'Sender didn\'t approve this contract to spend on his behalf. Execute approve function on the token contract'
 const errorTransferOwnershipAddress0 = 'New Owner cannot be address 0'
 const errorTransferOwnershipSameAddress = 'New Owner is already current owner'
 
@@ -153,8 +154,8 @@ contract('Marketplace', async accounts => {
 
   const sid = 'test-service-0'
   const sidNotExist = 'test-service-not-exist'
-  const price = 1000000000
-  const price2 = 2000000000
+  const price = 1000
+  const price2 = 2000
   const version = {
     hash: '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
     url: 'https://download.com/core.tar'
@@ -168,10 +169,14 @@ contract('Marketplace', async accounts => {
     url: 'https://notFound.com/core.tar'
   }
 
+  const purchaserInitialBalance = 1000000
+
   let marketplace = null
 
   before(async () => {
     token = await Token.new(tokenData.name, tokenData.symbol, tokenData.decimals, tokenData.totalSupply, { from: contractOwner })
+    await token.transfer(purchaser, purchaserInitialBalance, { from: contractOwner })
+    await token.transfer(purchaser2, purchaserInitialBalance, { from: contractOwner })
   })
 
   // TODO: to facto and test on token
@@ -354,9 +359,10 @@ contract('Marketplace', async accounts => {
       it('should have not paid service', async () => {
         assert.equal(await marketplace.hasPaid(0, { from: purchaser }), false)
       })
-
+      
       it('should pay a service', async () => {
-        const tx = await marketplace.pay(0, { from: purchaser, value: price2 })
+        await token.approve(marketplace.address, price2, { from: purchaser })
+        const tx = await marketplace.pay(0, { from: purchaser })
         assertEventServicePaid(tx, 0, sid, price2, purchaser, developer)
       })
 
@@ -366,12 +372,25 @@ contract('Marketplace', async accounts => {
         assertServicePayment(_payment, purchaser)
       })
 
-      it('should not be able to pay twice the same service', async () => {
-        await truffleAssert.reverts(marketplace.pay(0, { from: purchaser, value: price2 }), errorServicePaymentAlreadyPaid)
+      it('tokens should have been transferred from purchaser to developer', async () => {
+        const servicePrice = (await marketplace.services(0)).price
+        const purchaserBalance = await token.balanceOf(purchaser)
+        const developerBalance = await token.balanceOf(developer)
+
+        assert.isTrue(purchaserBalance.eq(BN(purchaserInitialBalance).sub(servicePrice)))
+        assert.isTrue(developerBalance.eq(servicePrice))
       })
 
-      it('should not be able to pay with a wrong price', async () => {
-        await truffleAssert.reverts(marketplace.pay(0, { from: purchaser2, value: price }), errorServicePaymentWrongPrice)
+      it('should fail when marketplace is not allowed to spend on behalf of purchaser', async () => {
+        truffleAssert.fails(marketplace.pay(0, { from: purchaser2 }), errorServicePaymentDidNotAllow)
+      })
+
+      it('should not be able to pay twice the same service', async () => {
+        await truffleAssert.reverts(marketplace.pay(0, { from: purchaser }), errorServicePaymentAlreadyPaid)
+      })
+
+      it('should not be able to pay without enough balance', async () => {
+        await truffleAssert.reverts(marketplace.pay(0, { from: other }), errorServicePaymentNotEnoughBalance)
       })
 
       it('should fail when getting service payment with not existing purchaser', async () => {

@@ -10,9 +10,9 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   struct Service {
-    address payable owner;
+    address owner;
     bytes sid;
-    uint price;
+    uint256 price;
 
     Version[] versions;
     Payment[] payments;
@@ -51,7 +51,7 @@ contract Marketplace is Ownable, Pausable {
     uint indexed serviceIndex,
     bytes sid,
     address indexed owner,
-    uint price
+    uint256 price
   );
 
   event ServiceOwnershipTransferred(
@@ -80,7 +80,7 @@ contract Marketplace is Ownable, Pausable {
     bytes sid,
     address indexed purchaser,
     address indexed seller,
-    uint price
+    uint256 price
   );
 
   // ------------------------------------------------------
@@ -191,7 +191,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Service
 
-  function createService (bytes memory sid, uint price) public whenNotPaused returns (uint serviceIndex) {
+  function createService (bytes memory sid, uint256 price) public whenNotPaused returns (uint serviceIndex) {
     require(!isServiceSidExist(sid), "Service's sid is already used");
     services.length++;
     Service storage service = services[services.length - 1];
@@ -207,7 +207,7 @@ contract Marketplace is Ownable, Pausable {
     return services.length - 1;
   }
 
-  function transferServiceOwnership (uint serviceIndex, address payable newOwner) public whenNotPaused onlyServiceOwner(serviceIndex) {
+  function transferServiceOwnership (uint serviceIndex, address newOwner) public whenNotPaused onlyServiceOwner(serviceIndex) {
     require(newOwner != address(0), "New Owner cannot be address 0");
     Service storage service = services[serviceIndex];
     require(newOwner != service.owner, "New Owner is already current owner");
@@ -220,7 +220,7 @@ contract Marketplace is Ownable, Pausable {
     service.owner = newOwner;
   }
 
-  function changeServicePrice (uint serviceIndex, uint newPrice) public whenNotPaused onlyServiceOwner(serviceIndex) {
+  function changeServicePrice (uint serviceIndex, uint256 newPrice) public whenNotPaused onlyServiceOwner(serviceIndex) {
     Service storage service = services[serviceIndex];
     emit ServicePriceChanged(
       serviceIndex,
@@ -233,7 +233,16 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes memory url) public whenNotPaused onlyServiceOwner(serviceIndex) returns (uint versionIndex) {
+  function createServiceVersion (
+    uint serviceIndex,
+    bytes20 hash,
+    bytes memory url
+  )
+    public
+    whenNotPaused
+    onlyServiceOwner(serviceIndex)
+    returns (uint versionIndex)
+  {
     require(!isServiceHashExist(hash), "Version's hash already exists");
     Service storage service = services[serviceIndex];
     service.versions.push(Version({
@@ -263,12 +272,15 @@ contract Marketplace is Ownable, Pausable {
     return false;
   }
 
-  // TODO: implement ERC20
   function pay(uint serviceIndex) public payable whenNotPaused returns (uint paymentIndex) {
-    require(!hasPaid(serviceIndex), "You already paid for this service");
+    require(!hasPaid(serviceIndex), "Sender already paid for this service");
     Service storage service = services[serviceIndex];
-    require(service.price == msg.value, "The service's price is different than the value of this transaction");
-    service.owner.transfer(msg.value);
+    require(tokenAddress.balanceOf(msg.sender) >= service.price, "Sender doesn't have enough balance to pay this service");
+    require(
+      tokenAddress.allowance(msg.sender, address(this)) >= service.price,
+      "Sender didn't approve this contract to spend on his behalf. Execute approve function on the token contract"
+    );
+    tokenAddress.transferFrom(msg.sender, service.owner, service.price);
     service.payments.push(Payment({
       purchaser: msg.sender
     }));
