@@ -9,7 +9,8 @@
     "migrate": "truffle migrate",
     "lint:sol": "solium -d .",
     "lint:sol:fix": "solium --fix -d .",
-    "test": "truffle test"
+    "test": "truffle test",
+    "generateTS": "npm run compile && typechain --target=web3-1.0.0 --outDir=build/typescript './build/contracts/*.json'"
   },
   "keywords": [],
   "author": "Anthony Estebe <anthony@mesg.com>",
@@ -26,7 +27,8 @@
     "chai": "^4.2.0",
     "eth-gas-reporter": "^0.1.12",
     "ethlint": "^1.2.2",
-    "truffle-assertions": "^0.7.2"
+    "truffle-assertions": "^0.7.2",
+    "typechain": "^0.3.11"
   },
   "description": ""
 }
