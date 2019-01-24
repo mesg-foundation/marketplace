@@ -6,6 +6,7 @@ const truffleAssert = require('truffle-assertions')
 const { newDefaultToken, BN, hexToAscii, asciiToHex } = require('./utils')
 
 const Marketplace = artifacts.require('Marketplace')
+const Token = artifacts.require('MESGToken')
 
 // Errors from contract
 const errorServiceOwner = 'Service owner is not the same as the sender'
@@ -82,6 +83,7 @@ const assertServicePayment = (payment, purchaser) => {
 }
 
 const sid = 'test-service-0'
+const sid2 = 'test-service-1'
 const sidNotExist = 'test-service-not-exist'
 const price = 1000
 const price2 = 2000
@@ -114,7 +116,7 @@ contract('Marketplace', async ([
   other
 ]) => {
   before(async () => {
-    token = await newDefaultToken(contractOwner)
+    token = await newDefaultToken(Token, contractOwner)
     await token.transfer(purchaser, purchaserInitialBalance, { from: contractOwner })
     await token.transfer(purchaser2, purchaserInitialBalance, { from: contractOwner })
   })
@@ -122,6 +124,7 @@ contract('Marketplace', async ([
   describe('marketplace', async () => {
     before(async () => {
       marketplace = await Marketplace.new(token.address, { from: contractOwner })
+      console.log('marketplace address', marketplace.address)
     })
 
     describe('service creation', async () => {
@@ -131,7 +134,9 @@ contract('Marketplace', async ([
       })
 
       it('should have one service', async () => {
+        assert.equal(await marketplace.getServicesCount(), 1)
         const serviceIndex = await marketplace.getServiceIndex(asciiToHex(sid))
+        assert.equal(serviceIndex, 0)
         const service = await marketplace.services(serviceIndex)
         assertService(service, sid, price, developer)
       })
@@ -143,6 +148,19 @@ contract('Marketplace', async ([
       it('should fail when getting service with not existing sid', async () => {
         await truffleAssert.reverts(marketplace.getServiceIndex(asciiToHex(sidNotExist)), errorServiceNotFound)
       })
+
+      it('should create a second service', async () => {
+        const tx = await marketplace.createService(asciiToHex(sid2), price, { from: developer })
+        assertEventServiceCreated(tx, 1, sid2, price, developer)
+      })
+
+      it('should have two service', async () => {
+        assert.equal(await marketplace.getServicesCount(), 2)
+        const serviceIndex = await marketplace.getServiceIndex(asciiToHex(sid2))
+        assert.equal(serviceIndex, 1)
+        const service = await marketplace.services(serviceIndex)
+        assertService(service, sid2, price, developer)
+      })
     })
 
     describe('service price', async () => {
@@ -152,7 +170,7 @@ contract('Marketplace', async ([
       })
 
       it('should have changed service price', async () => {
-        assert.equal(await marketplace.getServicesCount(), 1)
+        assert.equal(await marketplace.getServicesCount(), 2)
         const service = await marketplace.services(0)
         assertService(service, sid, price2, developer)
       })
@@ -240,12 +258,12 @@ contract('Marketplace', async ([
 
     describe('service ownership', async () => {
       it('original owner should have the service ownership', async () => {
-        assert.equal(await marketplace.getServicesCount(), 1)
+        assert.equal(await marketplace.getServicesCount(), 2)
         assert.isTrue(await marketplace.isServiceOwner(0, { from: developer }))
       })
 
       it('other should not have the service ownership', async () => {
-        assert.equal(await marketplace.getServicesCount(), 1)
+        assert.equal(await marketplace.getServicesCount(), 2)
         assert.isFalse(await marketplace.isServiceOwner(0, { from: other }))
       })
 
@@ -257,12 +275,12 @@ contract('Marketplace', async ([
       })
 
       it('new service owner should have the service ownership', async () => {
-        assert.equal(await marketplace.getServicesCount(), 1)
+        assert.equal(await marketplace.getServicesCount(), 2)
         assert.isTrue(await marketplace.isServiceOwner(0, { from: developer2 }))
       })
 
       it('original owner should not have the service ownership', async () => {
-        assert.equal(await marketplace.getServicesCount(), 1)
+        assert.equal(await marketplace.getServicesCount(), 2)
         assert.isFalse(await marketplace.isServiceOwner(0, { from: developer }))
       })
 

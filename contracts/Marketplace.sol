@@ -173,7 +173,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Count
 
-  function getServicesCount() external view returns (uint servicesCount) {
+  function getServicesCount() external view returns (uint) {
     return services.length;
   }
 

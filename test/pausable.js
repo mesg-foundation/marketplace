@@ -3,10 +3,11 @@
 
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
-const { Token, asciiToHex } = require('./utils')
+const { asciiToHex } = require('./utils')
+const { sid, version, price } = require('./marketplace')
 
 const Marketplace = artifacts.require('Marketplace')
-const { sid, version, price } = require('./marketplace')
+const Token = artifacts.require('MESGToken')
 
 contract('Marketplace Pausable', async accounts => {
   const [

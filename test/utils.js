@@ -1,7 +1,4 @@
-/* global artifacts */
-
 const web3 = require('web3')
-const Token = artifacts.require('MESGToken')
 
 const tokenTestConfig = {
   name: 'MESG Test',
@@ -10,7 +7,7 @@ const tokenTestConfig = {
   totalSupply: 100000000
 }
 
-const newDefaultToken = async (owner) => {
+const newDefaultToken = async (Token, owner) => {
   const contract = await Token.new(tokenTestConfig.name, tokenTestConfig.symbol, tokenTestConfig.decimals, tokenTestConfig.totalSupply, { from: owner })
   console.log('new token contract deployed at', contract.address)
   return contract
@@ -19,7 +16,6 @@ const newDefaultToken = async (owner) => {
 const BN = x => new web3.utils.BN(x)
 
 module.exports = {
-  Token,
   newDefaultToken,
   tokenTestConfig,
   BN,
