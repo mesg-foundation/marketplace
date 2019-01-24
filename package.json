@@ -5,8 +5,7 @@
   "scripts": {
     "truffle": "truffle",
     "compile": "truffle compile",
-    "compile-old": "truffle compile  && cp build/contracts/Marketplace.json service && cp build/contracts/Service.json service",
-    "migrate": "truffle migrate",
+    "migrate": "truffle migrate --interactive",
     "lint:sol": "solium -d .",
     "lint:sol:fix": "solium --fix -d .",
     "test": "truffle test",
@@ -16,8 +15,8 @@
   "author": "Anthony Estebe <anthony@mesg.com>",
   "license": "ISC",
   "dependencies": {
-    "openzeppelin-solidity": "^2.1.0",
-    "truffle": "^5.0.1",
+    "openzeppelin-solidity": "^2.1.2",
+    "truffle": "^5.0.2",
     "truffle-hdwallet-provider": "^1.0.2"
   },
   "directories": {

@@ -3,11 +3,9 @@
 
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
-const utils = require('../utils')
-const tokenData = require('../token/token')
+const { newDefaultToken, BN, hexToAscii, asciiToHex } = require('./utils')
 
 const Marketplace = artifacts.require('Marketplace')
-const Token = artifacts.require('Token')
 
 // Errors from contract
 const errorServiceOwner = 'Service owner is not the same as the sender'
@@ -28,29 +26,29 @@ const errorTransferOwnershipSameAddress = 'New Owner is already current owner'
 const assertEventServiceCreated = (tx, serviceIndex, sid, price, owner) => {
   truffleAssert.eventEmitted(tx, 'ServiceCreated')
   const event = tx.logs[0].args
-  assert.isTrue(event.serviceIndex.eq(utils.BN(serviceIndex)))
-  assert.equal(utils.hexToAscii(event.sid), sid)
+  assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
+  assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.owner, owner)
   assert.equal(event.price, price)
 }
 const assertService = (service, sid, price, owner) => {
   assert.equal(service.owner, owner)
-  assert.equal(utils.hexToAscii(service.sid), sid)
+  assert.equal(hexToAscii(service.sid), sid)
   assert.equal(service.price, price)
 }
 const assertEventServicePriceChanged = (tx, serviceIndex, sid, previousPrice, newPrice) => {
   truffleAssert.eventEmitted(tx, 'ServicePriceChanged')
   const event = tx.logs[0].args
-  assert.isTrue(event.serviceIndex.eq(utils.BN(serviceIndex)))
-  assert.equal(utils.hexToAscii(event.sid), sid)
+  assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
+  assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.previousPrice, previousPrice)
   assert.equal(event.newPrice, newPrice)
 }
 const assertEventServiceOwnershipTransferred = (tx, serviceIndex, sid, previousOwner, newOwner) => {
   truffleAssert.eventEmitted(tx, 'ServiceOwnershipTransferred')
   const event = tx.logs[0].args
-  assert.isTrue(event.serviceIndex.eq(utils.BN(serviceIndex)))
-  assert.equal(utils.hexToAscii(event.sid), sid)
+  assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
+  assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.previousOwner, previousOwner)
   assert.equal(event.newOwner, newOwner)
 }
@@ -59,22 +57,22 @@ const assertEventServiceOwnershipTransferred = (tx, serviceIndex, sid, previousO
 const assertEventServiceVersionCreated = (tx, serviceIndex, sid, versionHash, versionUrl) => {
   truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
   const event = tx.logs[0].args
-  assert.isTrue(event.serviceIndex.eq(utils.BN(serviceIndex)))
-  assert.equal(utils.hexToAscii(event.sid), sid)
+  assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
+  assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.hash, versionHash)
-  assert.equal(utils.hexToAscii(event.url), versionUrl)
+  assert.equal(hexToAscii(event.url), versionUrl)
 }
 const assertServiceVersion = (version, versionHash, versionUrl) => {
   assert.equal(version.hash, versionHash)
-  assert.equal(utils.hexToAscii(version.url), versionUrl)
+  assert.equal(hexToAscii(version.url), versionUrl)
 }
 
 // Service payment
 const assertEventServicePaid = (tx, serviceIndex, sid, price, purchaser, seller) => {
   truffleAssert.eventEmitted(tx, 'ServicePaid')
   const event = tx.logs[0].args
-  assert.isTrue(event.serviceIndex.eq(utils.BN(serviceIndex)))
-  assert.equal(utils.hexToAscii(event.sid), sid)
+  assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
+  assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.purchaser, purchaser)
   assert.equal(event.seller, seller)
   assert.equal(event.price, price)
@@ -116,7 +114,7 @@ contract('Marketplace', async ([
   other
 ]) => {
   before(async () => {
-    token = await Token.new(tokenData.name, tokenData.symbol, tokenData.decimals, tokenData.totalSupply, { from: contractOwner })
+    token = await newDefaultToken(contractOwner)
     await token.transfer(purchaser, purchaserInitialBalance, { from: contractOwner })
     await token.transfer(purchaser2, purchaserInitialBalance, { from: contractOwner })
   })
@@ -128,22 +126,22 @@ contract('Marketplace', async ([
 
     describe('service creation', async () => {
       it('should create a service', async () => {
-        const tx = await marketplace.createService(utils.asciiToHex(sid), price, { from: developer })
+        const tx = await marketplace.createService(asciiToHex(sid), price, { from: developer })
         assertEventServiceCreated(tx, 0, sid, price, developer)
       })
 
       it('should have one service', async () => {
-        const serviceIndex = await marketplace.getServiceIndex(utils.asciiToHex(sid))
+        const serviceIndex = await marketplace.getServiceIndex(asciiToHex(sid))
         const service = await marketplace.services(serviceIndex)
         assertService(service, sid, price, developer)
       })
 
       it('should not be able to create a service with existing sid', async () => {
-        await truffleAssert.reverts(marketplace.createService(utils.asciiToHex(sid), price, { from: developer2 }), errorServiceSidAlreadyUsed)
+        await truffleAssert.reverts(marketplace.createService(asciiToHex(sid), price, { from: developer2 }), errorServiceSidAlreadyUsed)
       })
 
       it('should fail when getting service with not existing sid', async () => {
-        await truffleAssert.reverts(marketplace.getServiceIndex(utils.asciiToHex(sidNotExist)), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.getServiceIndex(asciiToHex(sidNotExist)), errorServiceNotFound)
       })
     })
 
@@ -162,7 +160,7 @@ contract('Marketplace', async ([
 
     describe('service version', async () => {
       it('should create a version', async () => {
-        const tx = await marketplace.createServiceVersion(0, version.hash, utils.asciiToHex(version.url), { from: developer })
+        const tx = await marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer })
         assertEventServiceVersionCreated(tx, 0, sid, version.hash, version.url)
       })
 
@@ -173,7 +171,7 @@ contract('Marketplace', async ([
       })
 
       it('should create an other version', async () => {
-        const tx = await marketplace.createServiceVersion(0, version2.hash, utils.asciiToHex(version2.url), { from: developer })
+        const tx = await marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.url), { from: developer })
         assertEventServiceVersionCreated(tx, 0, sid, version2.hash, version2.url)
       })
 
@@ -188,7 +186,7 @@ contract('Marketplace', async ([
       })
 
       it('should not be able to create a version with same hash', async () => {
-        await truffleAssert.reverts(marketplace.createServiceVersion(0, version2.hash, utils.asciiToHex(version2.url), { from: developer }), errorServiceVersionHashAlreadyExist)
+        await truffleAssert.reverts(marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.url), { from: developer }), errorServiceVersionHashAlreadyExist)
       })
 
       it('should fail when getting service version with not existing hash', async () => {
@@ -219,7 +217,7 @@ contract('Marketplace', async ([
         const purchaserBalance = await token.balanceOf(purchaser)
         const developerBalance = await token.balanceOf(developer)
 
-        assert.isTrue(purchaserBalance.eq(utils.BN(purchaserInitialBalance).sub(servicePrice)))
+        assert.isTrue(purchaserBalance.eq(BN(purchaserInitialBalance).sub(servicePrice)))
         assert.isTrue(developerBalance.eq(servicePrice))
       })
 
@@ -284,7 +282,7 @@ contract('Marketplace', async ([
           await truffleAssert.reverts(marketplace.changeServicePrice(0, price, { from: developer }), errorServiceOwner)
         })
         it('original owner should not be able to create a service version', async () => {
-          await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, utils.asciiToHex(version.url), { from: developer }), errorServiceOwner)
+          await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer }), errorServiceOwner)
         })
       })
     })

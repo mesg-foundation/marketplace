@@ -1,23 +1,27 @@
 /* eslint-env mocha */
-/* global contract */
+/* global contract, artifacts */
 
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
+const { Token, asciiToHex } = require('./utils')
 
-const { newDefaultToken } = require('../token/token')
+const Marketplace = artifacts.require('Marketplace')
+const { sid, version, price } = require('./marketplace')
 
-contract('Token Pausable', async accounts => {
+contract('Marketplace Pausable', async accounts => {
   const [
     originalOwner,
     newOwner,
+    developer,
     other
   ] = accounts
 
   let contract = null
 
-  describe('Token Pauser role', async () => {
+  describe('Marketplace Pauser role', async () => {
     before(async () => {
-      contract = await newDefaultToken(originalOwner)
+      const token = await Token.deployed()
+      contract = await Marketplace.new(token.address, { from: originalOwner })
     })
 
     it('original owner should be pauser', async () => {
@@ -47,9 +51,10 @@ contract('Token Pausable', async accounts => {
     })
   })
 
-  describe('Token Pause contract', async () => {
+  describe('Marketplace Pause contract', async () => {
     before(async () => {
-      contract = await newDefaultToken(originalOwner)
+      const token = await Token.deployed()
+      contract = await Marketplace.new(token.address, { from: originalOwner })
     })
 
     it('should pause', async () => {
@@ -66,29 +71,22 @@ contract('Token Pausable', async accounts => {
       assert.equal(await contract.paused(), false)
     })
 
-    describe('Token Test modifier whenNotPaused', async () => {
+    describe('Marketplace Test modifier whenNotPaused', async () => {
       before(async () => {
         await contract.pause({ from: originalOwner })
       })
 
-      it('should not be able to transfer', async () => {
-        await truffleAssert.reverts(contract.transfer(other, 1, { from: originalOwner }))
+      it('should not be able to transfer service ownership', async () => {
+        await truffleAssert.reverts(contract.createService(asciiToHex(sid), price, { from: developer }))
       })
-
-      it('should not be able to transferFrom', async () => {
-        await truffleAssert.reverts(contract.transferFrom(other, newOwner, 1, { from: originalOwner }))
+      it('should not be able to transfer service ownership', async () => {
+        await truffleAssert.reverts(contract.transferServiceOwnership(0, other, { from: developer }))
       })
-
-      it('should not be able to approve', async () => {
-        await truffleAssert.reverts(contract.approve(other, 1, { from: originalOwner }))
+      it('should not be able to change service price', async () => {
+        await truffleAssert.reverts(contract.changeServicePrice(0, price, { from: developer }))
       })
-
-      it('should not be able to increaseAllowance', async () => {
-        await truffleAssert.reverts(contract.increaseAllowance(other, 1, { from: originalOwner }))
-      })
-
-      it('should not be able to decreaseAllowance', async () => {
-        await truffleAssert.reverts(contract.decreaseAllowance(other, 1, { from: originalOwner }))
+      it('should not be able to create a service version', async () => {
+        await truffleAssert.reverts(contract.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer }))
       })
     })
   })

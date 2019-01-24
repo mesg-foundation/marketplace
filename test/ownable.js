@@ -5,7 +5,7 @@ const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
 
 const Marketplace = artifacts.require('Marketplace')
-const { newDefaultToken } = require('../token/token')
+const Token = artifacts.require('MESGToken')
 
 contract('Marketplace Ownable', async accounts => {
   const [
@@ -17,7 +17,7 @@ contract('Marketplace Ownable', async accounts => {
   let contract = null
 
   before(async () => {
-    const token = await newDefaultToken(originalOwner)
+    const token = await Token.deployed()
     contract = await Marketplace.new(token.address, { from: originalOwner })
   })
 
