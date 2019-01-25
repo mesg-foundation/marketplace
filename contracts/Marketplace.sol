@@ -20,7 +20,7 @@ contract Marketplace is Ownable, Pausable {
 
   struct Version {
     bytes20 hash;
-    bytes url;
+    bytes metadata;
   }
 
   struct Payment {
@@ -72,7 +72,7 @@ contract Marketplace is Ownable, Pausable {
     uint indexed serviceIndex,
     bytes sid,
     bytes20 hash,
-    bytes url
+    bytes metadata
   );
 
   event ServicePaid(
@@ -130,9 +130,9 @@ contract Marketplace is Ownable, Pausable {
 
   // Getters
 
-  function getServiceVersion(uint serviceIndex, uint versionIndex) external view returns (bytes20 hash, bytes memory url) {
+  function getServiceVersion(uint serviceIndex, uint versionIndex) external view returns (bytes20 hash, bytes memory metadata) {
     Version storage version = services[serviceIndex].versions[versionIndex];
-    return (version.hash, version.url);
+    return (version.hash, version.metadata);
   }
 
   function getServicePayment(uint serviceIndex, uint paymentIndex) external view returns (address purchaser) {
@@ -233,7 +233,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Version
 
-  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes calldata url)
+  function createServiceVersion (uint serviceIndex, bytes20 hash, bytes calldata metadata)
     external
     whenNotPaused
     onlyServiceOwner(serviceIndex)
@@ -242,13 +242,13 @@ contract Marketplace is Ownable, Pausable {
     Service storage service = services[serviceIndex];
     service.versions.push(Version({
       hash: hash,
-      url: url
+      metadata: metadata
     }));
     emit ServiceVersionCreated(
       serviceIndex,
       service.sid,
       hash,
-      url
+      metadata
     );
     return service.versions.length - 1;
   }

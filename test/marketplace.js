@@ -55,17 +55,17 @@ const assertEventServiceOwnershipTransferred = (tx, serviceIndex, sid, previousO
 }
 
 // Service version
-const assertEventServiceVersionCreated = (tx, serviceIndex, sid, versionHash, versionUrl) => {
+const assertEventServiceVersionCreated = (tx, serviceIndex, sid, versionHash, versionMetadata) => {
   truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
   const event = tx.logs[0].args
   assert.isTrue(event.serviceIndex.eq(BN(serviceIndex)))
   assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.hash, versionHash)
-  assert.equal(hexToAscii(event.url), versionUrl)
+  assert.equal(hexToAscii(event.metadata), versionMetadata)
 }
-const assertServiceVersion = (version, versionHash, versionUrl) => {
+const assertServiceVersion = (version, versionHash, versionMetadata) => {
   assert.equal(version.hash, versionHash)
-  assert.equal(hexToAscii(version.url), versionUrl)
+  assert.equal(hexToAscii(version.metadata), versionMetadata)
 }
 
 // Service payment
@@ -89,15 +89,15 @@ const price = 1000
 const price2 = 2000
 const version = {
   hash: '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
-  url: 'https://download.com/core.tar'
+  metadata: 'https://download.com/core.tar'
 }
 const version2 = {
   hash: '0xb444c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
-  url: 'https://get.com/core.tar'
+  metadata: 'https://get.com/core.tar'
 }
 const versionNotExisting = {
   hash: '0xc5555c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
-  url: 'https://notFound.com/core.tar'
+  metadata: 'https://notFound.com/core.tar'
 }
 
 const purchaserInitialBalance = 1000000
@@ -178,33 +178,33 @@ contract('Marketplace', async ([
 
     describe('service version', async () => {
       it('should create a version', async () => {
-        const tx = await marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer })
-        assertEventServiceVersionCreated(tx, 0, sid, version.hash, version.url)
+        const tx = await marketplace.createServiceVersion(0, version.hash, asciiToHex(version.metadata), { from: developer })
+        assertEventServiceVersionCreated(tx, 0, sid, version.hash, version.metadata)
       })
 
       it('should have one version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(0), 1)
         const _version = await marketplace.getServiceVersion(0, 0)
-        assertServiceVersion(_version, version.hash, version.url)
+        assertServiceVersion(_version, version.hash, version.metadata)
       })
 
       it('should create an other version', async () => {
-        const tx = await marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.url), { from: developer })
-        assertEventServiceVersionCreated(tx, 0, sid, version2.hash, version2.url)
+        const tx = await marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.metadata), { from: developer })
+        assertEventServiceVersionCreated(tx, 0, sid, version2.hash, version2.metadata)
       })
 
       it('should have two version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(0), 2)
         // check version
         const _version = await marketplace.getServiceVersion(0, 0)
-        assertServiceVersion(_version, version.hash, version.url)
+        assertServiceVersion(_version, version.hash, version.metadata)
         // check version2
         const _version2 = await marketplace.getServiceVersion(0, 1)
-        assertServiceVersion(_version2, version2.hash, version2.url)
+        assertServiceVersion(_version2, version2.hash, version2.metadata)
       })
 
       it('should not be able to create a version with same hash', async () => {
-        await truffleAssert.reverts(marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.url), { from: developer }), errorServiceVersionHashAlreadyExist)
+        await truffleAssert.reverts(marketplace.createServiceVersion(0, version2.hash, asciiToHex(version2.metadata), { from: developer }), errorServiceVersionHashAlreadyExist)
       })
 
       it('should fail when getting service version with not existing hash', async () => {
@@ -300,7 +300,7 @@ contract('Marketplace', async ([
           await truffleAssert.reverts(marketplace.changeServicePrice(0, price, { from: developer }), errorServiceOwner)
         })
         it('original owner should not be able to create a service version', async () => {
-          await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer }), errorServiceOwner)
+          await truffleAssert.reverts(marketplace.createServiceVersion(0, version.hash, asciiToHex(version.metadata), { from: developer }), errorServiceOwner)
         })
       })
     })
