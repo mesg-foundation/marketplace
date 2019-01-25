@@ -4,7 +4,7 @@
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
 const { asciiToHex } = require('./utils')
-const { sid, version, price } = require('./marketplace')
+const { sid, version, offer } = require('./marketplace')
 
 const Marketplace = artifacts.require('Marketplace')
 const Token = artifacts.require('MESGToken')
@@ -77,14 +77,17 @@ contract('Marketplace Pausable', async accounts => {
         await contract.pause({ from: originalOwner })
       })
 
-      it('should not be able to transfer service ownership', async () => {
-        await truffleAssert.reverts(contract.createService(asciiToHex(sid), price, { from: developer }))
+      it('should not be able to create a service', async () => {
+        await truffleAssert.reverts(contract.createService(asciiToHex(sid), { from: developer }))
       })
       it('should not be able to transfer service ownership', async () => {
         await truffleAssert.reverts(contract.transferServiceOwnership(0, other, { from: developer }))
       })
-      it('should not be able to change service price', async () => {
-        await truffleAssert.reverts(contract.changeServicePrice(0, price, { from: developer }))
+      it('should not be able to create a service offer', async () => {
+        await truffleAssert.reverts(contract.createServiceOffer(0, offer.price, offer.duration, { from: developer }))
+      })
+      it('should not be able to disable a service offer', async () => {
+        await truffleAssert.reverts(contract.disableServiceOffer(0, 0, { from: developer }))
       })
       it('should not be able to create a service version', async () => {
         await truffleAssert.reverts(contract.createServiceVersion(0, version.hash, asciiToHex(version.url), { from: developer }))
