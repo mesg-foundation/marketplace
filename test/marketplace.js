@@ -97,8 +97,9 @@ const assertEventServicePurchased = (tx, serviceIndex, sid, offerIndex, price, d
 }
 const assertServicePurchase = (purchase, purchaser, date, offerIndex) => {
   assert.equal(purchase.purchaser, purchaser)
-  // assert.equal(purchase.date, date) TODO: to test
   assert.equal(purchase.offerIndex, offerIndex)
+  // compare date with 0, -1 and -2 seconds
+  assert.isTrue(purchase.date.eq(BN(date)) || purchase.date.eq(BN(date - 2)) || purchase.date.eq(BN(date - 1)))
 }
 
 const sid = 'test-service-0'
@@ -292,7 +293,7 @@ contract('Marketplace', async ([
         assert.equal(await marketplace.hasPurchased(0, { from: purchaser }), true)
         assert.equal(await marketplace.getServicePurchasesCount(0), 1)
         const purchase = await marketplace.getServicePurchase(0, 0)
-        assertServicePurchase(purchase, purchaser, 0, 0)
+        assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000), 0)
       })
 
       it('tokens should have been transferred from purchaser to developer', async () => {
