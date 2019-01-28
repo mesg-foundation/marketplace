@@ -201,7 +201,9 @@ contract('Marketplace', async ([
 
       it('should have one version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(0), 1)
-        const _version = await marketplace.getServiceVersion(0, 0)
+        const versionIndex = await marketplace.getServiceVersionIndex(0, version.hash)
+        assert.equal(versionIndex, 0)
+        const _version = await marketplace.getServiceVersion(0, versionIndex)
         assertServiceVersion(_version, version.hash, version.metadata)
       })
 
@@ -213,10 +215,14 @@ contract('Marketplace', async ([
       it('should have two version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(0), 2)
         // check version
-        const _version = await marketplace.getServiceVersion(0, 0)
+        const versionIndex = await marketplace.getServiceVersionIndex(0, version.hash)
+        assert.equal(versionIndex, 0)
+        const _version = await marketplace.getServiceVersion(0, versionIndex)
         assertServiceVersion(_version, version.hash, version.metadata)
         // check version2
-        const _version2 = await marketplace.getServiceVersion(0, 1)
+        const versionIndex2 = await marketplace.getServiceVersionIndex(0, version2.hash)
+        assert.equal(versionIndex2, 1)
+        const _version2 = await marketplace.getServiceVersion(0, versionIndex2)
         assertServiceVersion(_version2, version2.hash, version2.metadata)
       })
 
@@ -262,8 +268,8 @@ contract('Marketplace', async ([
       })
 
       it('should create an offer on second service', async () => {
-        const tx = await marketplace.createServiceOffer(1, offer2.price, offer2.duration, { from: developer })
-        assertEventServiceOfferCreated(tx, 1, sid2, 0, offer2.price, offer2.duration)
+        const tx = await marketplace.createServiceOffer(1, offer.price, offer.duration, { from: developer })
+        assertEventServiceOfferCreated(tx, 1, sid2, 0, offer.price, offer.duration)
       })
 
       it('should disable offer on second service', async () => {
@@ -274,7 +280,7 @@ contract('Marketplace', async ([
       it('offer should be disabled', async () => {
         assert.equal(await marketplace.getServiceOffersCount(1), 1)
         const _offer = await marketplace.getServiceOffer(1, 0)
-        assertServiceOffer(_offer, offer2.price, offer2.duration, false)
+        assertServiceOffer(_offer, offer.price, offer.duration, false)
       })
     })
 
@@ -292,7 +298,9 @@ contract('Marketplace', async ([
       it('should have purchase service', async () => {
         assert.equal(await marketplace.hasPurchased(0, { from: purchaser }), true)
         assert.equal(await marketplace.getServicePurchasesCount(0), 1)
-        const purchase = await marketplace.getServicePurchase(0, 0)
+        const purchaseIndex = await marketplace.getServicePurchaseIndex(0, purchaser)
+        assert.equal(purchaseIndex, 0)
+        const purchase = await marketplace.getServicePurchase(0, purchaseIndex)
         assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000), 0)
       })
 
@@ -305,7 +313,7 @@ contract('Marketplace', async ([
       })
 
       it('should fail when marketplace is not allowed to spend on behalf of purchaser', async () => {
-        truffleAssert.fails(marketplace.purchase(0, 0, { from: purchaser2 }), errorServicePurchaseDidNotAllow)
+        await truffleAssert.reverts(marketplace.purchase(0, 0, { from: purchaser2 }), errorServicePurchaseDidNotAllow)
       })
 
       it('should not be able to purchase twice the same service', async () => {
