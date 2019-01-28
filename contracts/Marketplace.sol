@@ -11,7 +11,7 @@ contract Marketplace is Ownable, Pausable {
 
   struct Service {
     address owner;
-    bytes sid;
+    bytes32 sid;
 
     Version[] versions;
     Purchase[] purchases;
@@ -57,20 +57,20 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceCreated(
     uint indexed serviceIndex,
-    bytes sid,
+    bytes32 indexed sid,
     address indexed owner
   );
 
   event ServiceOwnershipTransferred(
     uint indexed serviceIndex,
-    bytes sid,
+    bytes32 sid,
     address indexed previousOwner,
     address indexed newOwner
   );
 
   event ServiceVersionCreated(
     uint indexed serviceIndex,
-    bytes sid,
+    bytes32 indexed sid,
     uint indexed versionIndex,
     bytes20 hash,
     bytes metadata
@@ -78,7 +78,7 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceOfferCreated(
     uint indexed serviceIndex,
-    bytes sid,
+    bytes32 indexed sid,
     uint indexed offerIndex,
     uint price,
     uint duration
@@ -86,13 +86,13 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceOfferDisabled(
     uint indexed serviceIndex,
-    bytes sid,
+    bytes32 indexed sid,
     uint indexed offerIndex
   );
 
   event ServicePurchased(
     uint indexed serviceIndex,
-    bytes sid,
+    bytes32 sid,
     uint indexed offerIndex,
     address indexed purchaser,
     uint price,
@@ -109,14 +109,6 @@ contract Marketplace is Ownable, Pausable {
   }
 
   // ------------------------------------------------------
-  // Utils functions
-  // ------------------------------------------------------
-
-  function compareBytes(bytes memory a, bytes memory b) internal pure returns (bool) {
-    return keccak256(a) == keccak256(b);
-  }
-
-  // ------------------------------------------------------
   // View functions
   // ------------------------------------------------------
 
@@ -124,9 +116,10 @@ contract Marketplace is Ownable, Pausable {
     return services[serviceIndex].owner == msg.sender;
   }
 
-  function isServiceSidExist(bytes memory sid) public view returns (bool) {
+  function isServiceSidExist(bytes32 sid) public view returns (bool) {
+    // if (services[servicesSid[sid]].sid == sid) {
     for (uint i = 0; i < services.length; i++) {
-      if (compareBytes(services[i].sid, sid)) {
+      if (services[i].sid == sid) {
         return true;
       }
     }
@@ -163,9 +156,9 @@ contract Marketplace is Ownable, Pausable {
 
   // Index
 
-  function getServiceIndex(bytes calldata sid) external view returns (uint) {
+  function getServiceIndex(bytes32 sid) external view returns (uint) {
     for (uint i = 0; i < services.length; i++) {
-      if (compareBytes(services[i].sid, sid)) {
+      if (services[i].sid == sid) {
         return i;
       }
     }
@@ -216,7 +209,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Manage Service
 
-  function createService (bytes calldata sid) external whenNotPaused returns (uint serviceIndex) {
+  function createService (bytes32 sid) external whenNotPaused returns (uint serviceIndex) {
     require(!isServiceSidExist(sid), "Service's sid is already used");
     services.length++;
     Service storage service = services[services.length - 1];
