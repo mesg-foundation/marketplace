@@ -35,11 +35,24 @@ contract Marketplace is Ownable, Pausable {
     bool active;
   }
 
+  struct VersionIndex {
+    uint serviceIndex;
+    uint versionIndex;
+  }
+
+  struct PurchaseIndex {
+    uint serviceIndex;
+    uint purchaseIndex;
+  }
+
   // ------------------------------------------------------
   // State variables
   // ------------------------------------------------------
 
   Service[] public services;
+  mapping(bytes32 => uint) public servicesSid;
+  mapping(bytes20 => VersionIndex) public versionsIndex;
+  mapping(address => PurchaseIndex[]) public purchasesIndex;
 
   IERC20 public token;
 
