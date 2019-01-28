@@ -120,15 +120,27 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   function isServiceOwner(bytes32 sid) public view returns (bool) {
+    if (!isServiceSidExist(sid)) {
+      return false;
+    }
     return services[sidToService[sid]].owner == msg.sender;
   }
 
   function isServiceSidExist(bytes32 sid) public view returns (bool) {
-    return services[sidToService[sid]].sid == sid;
+    if (sidToService[sid] >= services.length) {
+      return false;
+    }
+    return services[sidToService[sid]].sid == sid; // TODO: is this test useful?
   }
 
   function isServiceHashExist(bytes20 hash) public view returns (bool) {
     VersionIndexes storage indexes = hashToVersion[hash];
+    if (indexes.serviceIndex >= services.length) {
+      return false;
+    }
+    if (indexes.versionIndex >= services[indexes.serviceIndex].versions.length) {
+      return false;
+    }
     return services[indexes.serviceIndex].versions[indexes.versionIndex].hash == hash;
     // for (uint serviceIndex = 0; serviceIndex < services.length; serviceIndex++) {
     //   for (uint versionIndex = 0; versionIndex < services[serviceIndex].versions.length; versionIndex++) {
