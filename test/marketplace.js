@@ -316,7 +316,7 @@ contract('Marketplace', async ([
         await truffleAssert.reverts(marketplace.purchase(0, 0, { from: other }), errorServicePurchaseNotEnoughBalance)
       })
 
-      it('should fail when getting service purchase with not existing purchaser', async () => {
+      it('should fail when getting service purchase with not existing purchase', async () => {
         await truffleAssert.reverts(marketplace.getServicePurchaseIndex(0, other), errorServicePurchaseNotFound)
       })
 

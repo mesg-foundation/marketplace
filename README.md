@@ -1,6 +1,28 @@
-## Howto:
+## Installation
 
 - Install [Ganache](https://github.com/trufflesuite/ganache/releases/latest)
 - `npm install`
-- `npm run compile`
-- `npm run test` or `npm run migrate`
+
+## Test
+
+```
+npm run test
+```
+
+## Migrate
+
+```
+npm run migrate
+```
+
+## Generate Typescript definition
+
+```
+npm run typescript
+```
+
+## Code coverage
+
+```
+npm run coverage
+```

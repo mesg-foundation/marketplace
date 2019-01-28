@@ -9,13 +9,15 @@
     "lint:sol": "solium -d .",
     "lint:sol:fix": "solium --fix -d .",
     "test": "truffle test",
-    "generateTS": "npm run compile && typechain --target=web3-1.0.0 --outDir=build/typescript './build/contracts/*.json'"
+    "typescript": "npm run compile && typechain --target=web3-1.0.0 --outDir=build/typescript './build/contracts/*.json'",
+    "coverage": "solidity-coverage"
   },
   "keywords": [],
   "author": "Anthony Estebe <anthony@mesg.com>",
   "license": "ISC",
   "dependencies": {
     "openzeppelin-solidity": "^2.1.2",
+    "solidity-coverage": "git+https://github.com/rotcivegaf/solidity-coverage.git#5875f5b7bc74d447f3312c9c0e9fc7814b482477",
     "truffle": "^5.0.2",
     "truffle-hdwallet-provider": "^1.0.2"
   },
