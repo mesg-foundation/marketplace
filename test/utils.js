@@ -13,12 +13,11 @@ const newDefaultToken = async (Token, owner) => {
   return contract
 }
 
-const BN = x => new web3.utils.BN(x)
-
 module.exports = {
   newDefaultToken,
   tokenTestConfig,
-  BN,
+  BN: x => new web3.utils.BN(x),
   hexToAscii: x => web3.utils.hexToAscii(x).replace(/\u0000/g, ''),
-  asciiToHex: x => web3.utils.asciiToHex(x)
+  asciiToHex: x => web3.utils.asciiToHex(x),
+  sleep: ms => new Promise(resolve => setTimeout(resolve, ms))
 }

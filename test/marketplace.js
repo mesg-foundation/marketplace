@@ -3,7 +3,7 @@
 
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
-const { newDefaultToken, BN, hexToAscii, asciiToHex } = require('./utils')
+const { newDefaultToken, BN, hexToAscii, asciiToHex, sleep } = require('./utils')
 
 const Marketplace = artifacts.require('Marketplace')
 const Token = artifacts.require('MESGToken')
@@ -111,7 +111,7 @@ const offer = {
 }
 const offer2 = {
   price: 2000,
-  duration: 3600
+  duration: 1
 }
 const version = {
   hash: '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94',
@@ -323,6 +323,15 @@ contract('Marketplace', async ([
       it('should fail on purchase a service with a disabled offer', async () => {
         await token.approve(marketplace.address, offer2.price, { from: purchaser })
         await truffleAssert.reverts(marketplace.purchase(1, 0, { from: purchaser }), errorServicePurchaseOfferDisabled)
+      })
+
+      it('purchase should be expired', async () => {
+        await token.approve(marketplace.address, offer2.price, { from: purchaser2 })
+        const tx = await marketplace.purchase(0, 1, { from: purchaser2 })
+        assertEventServicePurchased(tx, 0, sid, 1, offer2.price, offer2.duration, purchaser2)
+        assert.equal(await marketplace.hasPurchased(0, { from: purchaser2 }), true)
+        await sleep(2 * 1000)
+        assert.equal(await marketplace.hasPurchased(0, { from: purchaser2 }), false)
       })
     })
 
