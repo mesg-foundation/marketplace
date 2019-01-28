@@ -19,5 +19,6 @@ module.exports = {
   BN: x => new web3.utils.BN(x),
   hexToAscii: x => web3.utils.hexToAscii(x).replace(/\u0000/g, ''),
   asciiToHex: x => web3.utils.asciiToHex(x),
+  asciiToHex32: x => web3.utils.asciiToHex(x),
   sleep: ms => new Promise(resolve => setTimeout(resolve, ms))
 }
