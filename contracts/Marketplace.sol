@@ -50,8 +50,8 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   Service[] public services;
-  mapping(bytes32 => uint) public sidToService;
-  mapping(bytes20 => VersionIndexes) public hashToVersion;
+  mapping(bytes32 => uint) private sidToService;
+  mapping(bytes20 => VersionIndexes) private hashToVersion;
   // mapping(address => PurchaseIndexes[]) public purchasesIndexes;
 
   IERC20 public token;
@@ -119,6 +119,15 @@ contract Marketplace is Ownable, Pausable {
   // View functions
   // ------------------------------------------------------
 
+  // Index
+
+  function getServiceIndex(bytes32 sid) external view returns (uint serviceIndex) {
+    require(isServiceSidExist(sid), "Service not found");
+    return sidToService[sid];
+  }
+
+  // Check function
+
   function isServiceOwner(bytes32 sid) public view returns (bool) {
     if (!isServiceSidExist(sid)) {
       return false;
@@ -146,11 +155,17 @@ contract Marketplace is Ownable, Pausable {
 
   // Getters
 
+  function getServiceVersion(bytes20 _hash) external view returns (bytes20 hash, bytes memory metadata) {
+    require(isServiceHashExist(_hash), "Version not found");
+    VersionIndexes storage indexes = hashToVersion[_hash];
+    Version storage version = services[indexes.serviceIndex].versions[indexes.versionIndex];
+    return (version.hash, version.metadata);
+  }
+
   function getServiceVersion(bytes32 sid, uint versionIndex) external view returns (bytes20 hash, bytes memory metadata) {
     Version storage version = services[sidToService[sid]].versions[versionIndex];
     return (version.hash, version.metadata);
   }
-
 
   function getServicePurchase(bytes32 sid, uint purchaseIndex) external view returns (address purchaser, uint date, uint offerIndex) {
     Purchase storage purchase = services[sidToService[sid]].purchases[purchaseIndex];
@@ -161,7 +176,7 @@ contract Marketplace is Ownable, Pausable {
     Offer storage offer = services[sidToService[sid]].offers[offerIndex];
     return (offer.price, offer.duration, offer.active);
   }
-  
+
   // Count
 
   function getServicesCount() external view returns (uint) {
@@ -202,7 +217,8 @@ contract Marketplace is Ownable, Pausable {
 
   function transferServiceOwnership (bytes32 sid, address newOwner) external whenNotPaused onlyServiceOwner(sid) {
     require(newOwner != address(0), "New Owner cannot be address 0");
-    Service storage service = services[sidToService[sid]];
+    uint serviceIndex = getServiceIndex(sid);
+    Service storage service = services[serviceIndex];
     require(newOwner != service.owner, "New Owner is already current owner");
     emit ServiceOwnershipTransferred(
       sid,
@@ -219,8 +235,8 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
   returns (uint versionIndex) {
+    uint serviceIndex = getServiceIndex(sid);
     require(!isServiceHashExist(hash), "Version's hash already exists");
-    uint serviceIndex = sidToService[sid];
     services[serviceIndex].versions.push(Version({
       hash: hash,
       metadata: metadata
@@ -246,7 +262,8 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
   returns (uint offerIndex) {
-    services[sidToService[sid]].offers.push(Offer({
+    uint serviceIndex = getServiceIndex(sid);
+    services[serviceIndex].offers.push(Offer({
       price: price,
       duration: duration,
       active: true
@@ -266,7 +283,8 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
   returns (uint _offerIndex) {
-    services[sidToService[sid]].offers[offerIndex].active = false;
+    uint serviceIndex = getServiceIndex(sid);
+    services[serviceIndex].offers[offerIndex].active = false;
     emit ServiceOfferDisabled(
       sid,
       offerIndex
@@ -279,7 +297,8 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   function hasPurchased(bytes32 sid) public view returns (bool purchased) {
-    Service storage service = services[sidToService[sid]];
+    uint serviceIndex = getServiceIndex(sid);
+    Service storage service = services[serviceIndex];
     for (uint i = 0; i < service.purchases.length; i++) {
       if (service.purchases[i].purchaser == msg.sender) {
         Purchase storage purchase = service.purchases[i];
@@ -293,8 +312,9 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function purchase(bytes32 sid, uint offerIndex) external whenNotPaused returns (uint purchaseIndex) {
+    uint serviceIndex = getServiceIndex(sid);
     require(!hasPurchased(sid), "Sender already purchased this service"); // TODO: this prevent a purchase in "advance" (before the previous is already expired)
-    Service storage service = services[sidToService[sid]];
+    Service storage service = services[serviceIndex];
     Offer storage offer = service.offers[offerIndex];
     require(offer.active, "Cannot purchase a disabled offer");
     require(token.balanceOf(msg.sender) >= offer.price, "Sender doesn't have enough balance to pay this service");
