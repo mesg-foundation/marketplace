@@ -298,9 +298,9 @@ contract('Marketplace', async ([
       it('should have purchase service', async () => {
         assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser }), true)
         assert.equal(await marketplace.getServicePurchasesCount(sidHex), 1)
-        const purchaseIndex = await marketplace.getServicePurchaseIndex(sidHex, purchaser)
-        assert.equal(purchaseIndex, 0)
-        const purchase = await marketplace.getServicePurchase(sidHex, purchaseIndex)
+        // const purchaseIndex = await marketplace.getServicePurchaseIndex(sidHex, purchaser)
+        // assert.equal(purchaseIndex, 0)
+        const purchase = await marketplace.getServicePurchase(sidHex, 0)
         assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000), 0)
       })
 
@@ -324,9 +324,9 @@ contract('Marketplace', async ([
         await truffleAssert.reverts(marketplace.purchase(sidHex, 0, { from: other }), errorServicePurchaseNotEnoughBalance)
       })
 
-      it('should fail when getting service purchase with not existing purchase', async () => {
-        await truffleAssert.reverts(marketplace.getServicePurchaseIndex(sidHex, other), errorServicePurchaseNotFound)
-      })
+      // it('should fail when getting service purchase with not existing purchase', async () => {
+      //   await truffleAssert.reverts(marketplace.getServicePurchaseIndex(sidHex, other), errorServicePurchaseNotFound)
+      // })
 
       it('should fail on purchase a service with a disabled offer', async () => {
         await token.approve(marketplace.address, offer2.price, { from: purchaser })

@@ -192,15 +192,15 @@ contract Marketplace is Ownable, Pausable {
   // }
 
   // TODO: need to change. a purchaser can purchase multiple offer.
-  function getServicePurchaseIndex(bytes32 sid, address purchaser) external view returns (uint) {
-    Service storage service = services[sidToService[sid]];
-    for (uint i = 0; i < service.purchases.length; i++) {
-      if (service.purchases[i].purchaser == purchaser) {
-        return i;
-      }
-    }
-    require(false, "Purchase not found");
-  }
+  // function getServicePurchaseIndex(bytes32 sid, address purchaser) external view returns (uint) {
+  //   Service storage service = services[sidToService[sid]];
+  //   for (uint i = 0; i < service.purchases.length; i++) {
+  //     if (service.purchases[i].purchaser == purchaser) {
+  //       return i;
+  //     }
+  //   }
+  //   require(false, "Purchase not found");
+  // }
 
   // Count
 
@@ -333,7 +333,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function purchase(bytes32 sid, uint offerIndex) external whenNotPaused returns (uint purchaseIndex) {
-    require(!hasPurchased(sid), "Sender already purchased this service");
+    require(!hasPurchased(sid), "Sender already purchased this service"); // TODO: this prevent a purchase in "advance" (before the previous is already expired)
     Service storage service = services[sidToService[sid]];
     Offer storage offer = service.offers[offerIndex];
     require(offer.active, "Cannot purchase a disabled offer");
