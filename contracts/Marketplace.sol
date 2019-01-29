@@ -117,7 +117,6 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function isServiceSidExist(bytes32 sid) public view returns (bool) {
-    // if (services[servicesSid[sid]].sid == sid) {
     for (uint i = 0; i < services.length; i++) {
       if (services[i].sid == sid) {
         return true;
@@ -175,15 +174,18 @@ contract Marketplace is Ownable, Pausable {
     require(false, "Version not found");
   }
 
-  function getServicePurchaseIndex(uint serviceIndex, address purchaser) external view returns (uint) {
-    Service storage service = services[serviceIndex];
-    for (uint i = 0; i < service.purchases.length; i++) {
-      if (service.purchases[i].purchaser == purchaser) {
-        return i;
-      }
-    }
-    require(false, "Purchase not found");
-  }
+  // function getServicePurchaseIndexes(uint serviceIndex, address purchaser) external view returns (uint[] memory) {
+  //   Service storage service = services[serviceIndex];
+  //   uint[] memory indexes = new uint[](service.purchases.length);
+  //   uint cpt = 0;
+  //   for (uint i = 0; i < service.purchases.length; i++) {
+  //     if (service.purchases[i].purchaser == purchaser) {
+  //       indexes[cpt] = i;
+  //       cpt++;
+  //     }
+  //   }
+  //   return indexes;
+  // }
 
   // Count
 
@@ -317,7 +319,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function purchase(uint serviceIndex, uint offerIndex) external whenNotPaused returns (uint purchaseIndex) {
-    require(!hasPurchased(serviceIndex), "Sender already purchased this service");
+    require(!hasPurchased(serviceIndex), "Sender already purchased this service"); // TODO: this prevent a purchase in "advance" (before the previous is already expired)
     Service storage service = services[serviceIndex];
     Offer storage offer = services[serviceIndex].offers[offerIndex];
     require(offer.active, "Cannot purchase a disabled offer");
