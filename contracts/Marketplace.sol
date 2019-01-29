@@ -130,7 +130,7 @@ contract Marketplace is Ownable, Pausable {
     if (sidToService[sid] >= services.length) {
       return false;
     }
-    return services[sidToService[sid]].sid == sid; // TODO: is this test useful?
+    return services[sidToService[sid]].sid == sid;
   }
 
   function isServiceHashExist(bytes20 hash) public view returns (bool) {
@@ -142,14 +142,6 @@ contract Marketplace is Ownable, Pausable {
       return false;
     }
     return services[indexes.serviceIndex].versions[indexes.versionIndex].hash == hash;
-    // for (uint serviceIndex = 0; serviceIndex < services.length; serviceIndex++) {
-    //   for (uint versionIndex = 0; versionIndex < services[serviceIndex].versions.length; versionIndex++) {
-    //     if (services[serviceIndex].versions[versionIndex].hash == hash) {
-    //       return true;
-    //     }
-    //   }
-    // }
-    // return false;
   }
 
   // Getters
@@ -169,39 +161,7 @@ contract Marketplace is Ownable, Pausable {
     Offer storage offer = services[sidToService[sid]].offers[offerIndex];
     return (offer.price, offer.duration, offer.active);
   }
-
-  // Index
-
-  // function getServiceIndex(bytes32 sid) external view returns (uint) {
-  //   for (uint i = 0; i < services.length; i++) {
-  //     if (services[i].sid == sid) {
-  //       return i;
-  //     }
-  //   }
-  //   require(false, "Service not found");
-  // }
-
-  // function getServiceVersionIndex(uint serviceIndex, bytes20 hash) external view returns (uint) {
-  //   Service storage service = services[serviceIndex];
-  //   for (uint i = 0; i < service.versions.length; i++) {
-  //     if (service.versions[i].hash == hash) {
-  //       return i;
-  //     }
-  //   }
-  //   require(false, "Version not found");
-  // }
-
-  // TODO: need to change. a purchaser can purchase multiple offer.
-  // function getServicePurchaseIndex(bytes32 sid, address purchaser) external view returns (uint) {
-  //   Service storage service = services[sidToService[sid]];
-  //   for (uint i = 0; i < service.purchases.length; i++) {
-  //     if (service.purchases[i].purchaser == purchaser) {
-  //       return i;
-  //     }
-  //   }
-  //   require(false, "Purchase not found");
-  // }
-
+  
   // Count
 
   function getServicesCount() external view returns (uint) {
