@@ -211,7 +211,7 @@ contract Marketplace is Ownable, Pausable {
 
   // Throw if service not found
   // Throw if purchase not found
-  function getServicePurchase(bytes32 sid, address _purchaser) public view returns (address purchaser, uint expirationDate) {
+  function getServicePurchase(bytes32 sid, address _purchaser) external view returns (address purchaser, uint expirationDate) {
     (uint _serviceIndex, uint _purchaseIndex) = getServicePurchaseIndexes(sid, _purchaser);
     Purchase storage _purchase = services[_serviceIndex].purchases[_purchaseIndex];
     return (_purchase.purchaser, _purchase.expirationDate);
@@ -377,12 +377,12 @@ contract Marketplace is Ownable, Pausable {
   // ------------------------------------------------------
 
   // Throw if service not found
-  function hasPurchased(bytes32 sid) public view returns (bool purchased) {
+  function hasPurchased(bytes32 sid) external view returns (bool purchased) {
     if (!isServicePurchaseExist(sid, msg.sender)) {
       return false;
     }
-    (, uint _expirationDate) = getServicePurchase(sid, msg.sender);
-    return _expirationDate >= now;
+    (uint _serviceIndex, uint _purchaseIndex) = getServicePurchaseIndexes(sid, msg.sender);
+    return services[_serviceIndex].purchases[_purchaseIndex].expirationDate >= now;
   }
 
   // Throw if service not found
