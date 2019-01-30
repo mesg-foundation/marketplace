@@ -5,27 +5,20 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 contract Marketplace is Ownable, Pausable {
-  // ------------------------------------------------------
-  // Structures
-  // ------------------------------------------------------
-
   struct Service {
     address owner;
-    bytes32 sid;
 
-    Version[] versions;
-    Purchase[] purchases;
+    mapping(bytes20 => Version) versions;
+    bytes20[] versionsList;
+
     Offer[] offers;
+
+    mapping(address => uint) purchasers;
+    address[] purchasersList;
   }
 
   struct Version {
-    bytes20 hash;
     bytes metadata;
-  }
-
-  struct Purchase {
-    address purchaser;
-    uint expirationDate;
   }
 
   struct Offer {
@@ -34,33 +27,16 @@ contract Marketplace is Ownable, Pausable {
     bool active;
   }
 
-  struct VersionIndexes {
-    uint serviceIndex;
-    uint versionIndex;
-  }
+  IERC20 private token;
 
-  // ------------------------------------------------------
-  // State variables
-  // ------------------------------------------------------
+  mapping(bytes20 => bool) private hashes;
 
-  Service[] public services;
-  mapping(bytes32 => uint) private sidToService;
-  mapping(bytes20 => VersionIndexes) private hashToVersion;
-  mapping(address => mapping(bytes32 => uint)) private purchaserToSidToPurchase;
-
-  IERC20 public token;
-
-  // ------------------------------------------------------
-  // Constructor
-  // ------------------------------------------------------
+  mapping(bytes32 => Service) public services;
+  bytes32[] public servicesList;
 
   constructor(IERC20 _token) public {
     token = _token;
   }
-
-  // ------------------------------------------------------
-  // Events
-  // ------------------------------------------------------
 
   event ServiceCreated(
     bytes32 indexed sid,
@@ -97,348 +73,150 @@ contract Marketplace is Ownable, Pausable {
     address indexed purchaser,
     uint price,
     uint duration,
-    uint expirationDate
+    uint expire
   );
 
-  // ------------------------------------------------------
-  // Modifier functions
-  // ------------------------------------------------------
+  function isBytesZero(bytes memory b) pure internal returns (bool) {
+    if (b.length == 0) {
+      return true;
+    }
+    bytes memory zero = new bytes(b.length);
+    return keccak256(b) == keccak256(zero);
+  }
 
-  // Throw if service not found
-  // Throw if service owner is not the sender
-  modifier onlyServiceOwner(bytes32 sid) {
-    require(isServiceOwner(sid), "Service owner is not the same as the sender");
+  modifier addressNotZero(address a) {
+    require(a != address(0), "Address is set to zero");
     _;
   }
 
-  // ------------------------------------------------------
-  // View functions
-  // ------------------------------------------------------
-
-  // Index - Internal
-
-  // Throw if service not found
-  function getServiceIndex(bytes32 sid) internal view returns (uint serviceIndex) {
-    require(isServiceSidExist(sid), "Service not found");
-    return sidToService[sid];
+  modifier whenServiceExist(bytes32 sid) {
+    require(services[sid].owner != address(0), "Service with sid wasn't created");
+    _;
   }
 
-  // Throw if version not found
-  function getServiceVersionIndexes(bytes20 hash) internal view returns (uint serviceIndex, uint versionIndex) {
-    require(isServiceHashExist(hash), "Version not found");
-    return (hashToVersion[hash].serviceIndex, hashToVersion[hash].versionIndex);
+  modifier whenServiceNotExist(bytes32 sid) {
+    require(services[sid].owner == address(0), "Service  with sid has been already created");
+    _;
   }
 
-  // Throw if service not found
-  // Throw if purchase not found
-  function getServicePurchaseIndexes(bytes32 sid, address purchaser) internal view returns (uint serviceIndex, uint purchaseIndex) {
-    uint _serviceIndex = getServiceIndex(sid);
-    require(isServicePurchaseExist(sid, purchaser), "Purchase not found");
-    uint _purchaserIndex = purchaserToSidToPurchase[purchaser][sid];
-    return (_serviceIndex, _purchaserIndex);
+  modifier onlyServiceOwner(bytes32 sid) {
+    require(services[sid].owner == msg.sender, "Service owner is not the same as the sender");
+    _;
   }
 
-  // Check function
-
-  // Throw if service not found
-  function isServiceOwner(bytes32 sid) public view returns (bool) {
-    uint _serviceIndex = getServiceIndex(sid);
-    return services[_serviceIndex].owner == msg.sender;
+  modifier notServiceOwner(bytes32 sid) {
+    require(services[sid].owner != msg.sender, "Service owner is the same as the sender");
+    _;
   }
 
-  function isServiceSidExist(bytes32 sid) public view returns (bool) {
-    uint _serviceIndex = sidToService[sid];
-    if (_serviceIndex >= services.length) {
-      return false;
-    }
-    return services[_serviceIndex].sid == sid;
+  modifier whenServiceHashNotExist(bytes20 hash) {
+    require(!hashes[hash], "Hash exist");
+    _;
   }
 
-  function isServiceHashExist(bytes20 hash) public view returns (bool) {
-    VersionIndexes storage _indexes = hashToVersion[hash];
-    if (_indexes.serviceIndex >= services.length) {
-      return false;
-    }
-    Service storage _service = services[_indexes.serviceIndex];
-    if (_indexes.versionIndex >= _service.versions.length) {
-      return false;
-    }
-    return _service.versions[_indexes.versionIndex].hash == hash;
+  modifier whenServiceVersionNotEmpty(bytes32 sid) {
+    require(services[sid].versionsList.length > 0, "Cannot create an offer on a service without version");
+    _;
   }
 
-  // Throw if service not found
-  function isServicePurchaseExist(bytes32 sid, address purchaser) public view returns (bool) {
-    uint _serviceIndex = getServiceIndex(sid);
-    Service storage _service = services[_serviceIndex];
-    uint _purchaseIndex = purchaserToSidToPurchase[purchaser][sid];
-    if (_purchaseIndex >= _service.purchases.length) {
-      return false;
-    }
-    return _service.purchases[_purchaseIndex].purchaser == purchaser;
+  modifier whenServiceOfferExist(bytes32 sid, uint offerIndex) {
+    require(offerIndex < services[sid].offers.length, "Sevice offer not exist");
+    _;
   }
 
-  // Throw if service not found
-  function isServiceOfferExist(bytes32 sid, uint offerIndex) public view returns (bool) {
-    uint _serviceIndex = getServiceIndex(sid);
-    return offerIndex < services[_serviceIndex].offers.length;
+  modifier whenServiceOfferActive(bytes32 sid, uint offerIndex) {
+    require(services[sid].offers[offerIndex].active, "Sevice offer not active");
+    _;
   }
 
-  // Getters
-
-  // Throw if service not found
-  function getService(bytes32 _sid) external view returns (address owner, bytes32 sid) {
-    uint _serviceIndex = getServiceIndex(_sid);
-    Service storage _service = services[_serviceIndex];
-    return (_service.owner, _service.sid);
+  function getServicesListCount() external view returns (uint count) {
+    return servicesList.length;
   }
 
-  // Throw if version not found
-  function getServiceVersion(bytes20 _hash) external view returns (bytes20 hash, bytes memory metadata) {
-    (uint _serviceIndex, uint _versionIndex) = getServiceVersionIndexes(_hash);
-    Version storage _version = services[_serviceIndex].versions[_versionIndex];
-    return (_version.hash, _version.metadata);
+  function getServicesVersionsListCount(bytes32 sid) external view whenServiceExist(sid) returns (uint count) {
+    return services[sid].versionsList.length;
   }
 
-  // Throw if service not found
-  // Throw if version not found
-  function getServiceVersionWithIndex(bytes32 sid, uint versionIndex) external view returns (bytes20 hash, bytes memory metadata) {
-    uint _serviceIndex = getServiceIndex(sid);
-    require(versionIndex < services[_serviceIndex].versions.length, "Version not found");
-    Version storage _version = services[_serviceIndex].versions[versionIndex];
-    return (_version.hash, _version.metadata);
+  function getServicesVersion(bytes32 sid, bytes20 hash) external view whenServiceExist(sid) returns (bytes memory metadata) {
+    return services[sid].versions[hash].metadata;
   }
 
-  // Throw if service not found
-  // Throw if purchase not found
-  function getServicePurchase(bytes32 sid, address _purchaser) external view returns (address purchaser, uint expirationDate) {
-    (uint _serviceIndex, uint _purchaseIndex) = getServicePurchaseIndexes(sid, _purchaser);
-    Purchase storage _purchase = services[_serviceIndex].purchases[_purchaseIndex];
-    return (_purchase.purchaser, _purchase.expirationDate);
+  function getServicesOffersCount(bytes32 sid) external view whenServiceExist(sid) returns (uint count) {
+    return services[sid].offers.length;
   }
 
-  // Throw if service not found
-  // Throw if purchase not found
-  function getServicePurchaseWithIndex(bytes32 sid, uint purchaseIndex) external view returns (address purchaser, uint expirationDate) {
-    uint _serviceIndex = getServiceIndex(sid);
-    require(purchaseIndex < services[_serviceIndex].purchases.length, "Purchase not found");
-    Purchase storage _purchase = services[_serviceIndex].purchases[purchaseIndex];
-    return (_purchase.purchaser, _purchase.expirationDate);
+  function getServicesOffer(bytes32 sid, uint offerIndex) external view whenServiceExist(sid) returns (uint price, uint duration, bool active) {
+    Offer storage offer = services[sid].offers[offerIndex];
+    return (offer.price, offer.duration, offer.active);
   }
 
-  // Throw if service not found
-  // Throw if offer not found
-  function getServiceOfferWithIndex(bytes32 sid, uint offerIndex) external view returns (uint price, uint duration, bool active) {
-    uint _serviceIndex = getServiceIndex(sid);
-    require(isServiceOfferExist(sid, offerIndex), "Offer not found");
-    Offer storage _offer = services[_serviceIndex].offers[offerIndex];
-    return (_offer.price, _offer.duration, _offer.active);
+  function getServicesPurchasersListCount(bytes32 sid) external view whenServiceExist(sid) returns (uint count) {
+    return services[sid].purchasersList.length;
   }
 
-  // Count
-
-  function getServicesCount() external view returns (uint) {
-    return services.length;
+  function getServicesPurchasers(bytes32 sid, address purchase) external view whenServiceExist(sid) returns (uint expire) {
+    return services[sid].purchasers[purchase];
   }
 
-  // Throw if service not found
-  function getServiceVersionsCount(bytes32 sid) external view returns (uint) {
-    uint _serviceIndex = getServiceIndex(sid);
-    return services[_serviceIndex].versions.length;
+  function createService(bytes32 sid) external whenNotPaused whenServiceNotExist(sid) {
+    services[sid].owner = msg.sender;
+    servicesList.push(sid);
+    emit ServiceCreated(sid, msg.sender);
   }
 
-  // Throw if service not found
-  function getServicePurchasesCount(bytes32 sid) external view returns (uint) {
-    uint _serviceIndex = getServiceIndex(sid);
-    return services[_serviceIndex].purchases.length;
+  function transferServiceOwnership(bytes32 sid, address newOwner) external whenNotPaused onlyServiceOwner(sid) addressNotZero(newOwner) {
+    emit ServiceOwnershipTransferred(sid, services[sid].owner, newOwner);
+    services[sid].owner = newOwner;
   }
 
-  // Throw if service not found
-  function getServiceOffersCount(bytes32 sid) external view returns (uint) {
-    uint _serviceIndex = getServiceIndex(sid);
-    return services[_serviceIndex].offers.length;
+  function createServiceVersion(bytes32 sid, bytes20 hash, bytes calldata metadata) external whenNotPaused onlyServiceOwner(sid) whenServiceHashNotExist(hash) {
+    require(!isBytesZero(metadata), 'metadata is empty');
+    services[sid].versions[hash].metadata = metadata;
+    services[sid].versionsList.push(hash);
+    hashes[hash] = true;
+    emit ServiceVersionCreated(sid, hash, metadata);
   }
 
-  // ------------------------------------------------------
-  // Setter functions
-  // ------------------------------------------------------
-
-  // Manage Service
-
-  // Throw if sid already exist
-  function createService (bytes32 sid) external whenNotPaused returns (uint serviceIndex) {
-    require(!isServiceSidExist(sid), "Service's sid is already used");
-    services.length++;
-    Service storage _service = services[services.length - 1];
-    _service.sid = sid;
-    _service.owner = msg.sender;
-    sidToService[sid] = services.length - 1;
-    emit ServiceCreated(
-      sid,
-      _service.owner
-    );
-    return services.length - 1;
-  }
-
-  // Throw if service not found
-  // Throw if service owner is not the sender
-  // Throw if new owner address is 0
-  // Throw if new owner is current owner
-  function transferServiceOwnership (bytes32 sid, address newOwner) external whenNotPaused onlyServiceOwner(sid) {
-    require(newOwner != address(0), "New Owner cannot be address 0");
-    uint _serviceIndex = getServiceIndex(sid);
-    Service storage _service = services[_serviceIndex];
-    require(newOwner != _service.owner, "New Owner is already current owner");
-    emit ServiceOwnershipTransferred(
-      sid,
-      _service.owner,
-      newOwner
-    );
-    _service.owner = newOwner;
-  }
-
-  // Manage Version
-
-  // Throw if service not found
-  // Throw if service owner is not the sender
-  // Throw if hash already exist
-  function createServiceVersion (bytes32 sid, bytes20 hash, bytes calldata metadata)
-    external
-    whenNotPaused
-    onlyServiceOwner(sid)
-  returns (uint versionIndex) {
-    uint _serviceIndex = getServiceIndex(sid);
-    require(!isServiceHashExist(hash), "Version's hash already exists");
-    services[_serviceIndex].versions.push(Version({
-      hash: hash,
-      metadata: metadata
-    }));
-    uint _versionIndex = services[_serviceIndex].versions.length - 1;
-    hashToVersion[hash] = VersionIndexes(
-      _serviceIndex,
-      _versionIndex
-    );
-    emit ServiceVersionCreated(
-      sid,
-      hash,
-      metadata
-    );
-    return _versionIndex;
-  }
-
-  // Manage Offer
-
-  // Throw if service not found
-  // Throw if service owner is not the sender
-  function createServiceOffer (bytes32 sid, uint price, uint duration)
-    external
-    whenNotPaused
-    onlyServiceOwner(sid)
-  returns (uint offerIndex) {
-    uint _serviceIndex = getServiceIndex(sid);
-    Service storage _service = services[_serviceIndex];
-    require(_service.versions.length > 0, "Cannot create an offer on a service without version");
-    _service.offers.push(Offer({
+  function createServiceOffer(bytes32 sid, uint price, uint duration) external whenNotPaused onlyServiceOwner(sid) whenServiceVersionNotEmpty(sid) returns (uint offerIndex) {
+    require(price > 0, 'price is 0');
+    require(duration > 0, 'duration is 0');
+    Offer[] storage offers = services[sid].offers;
+    offers.push(Offer({
       price: price,
       duration: duration,
       active: true
     }));
-    uint _offerIndex = _service.offers.length - 1;
-    emit ServiceOfferCreated(
-      sid,
-      _offerIndex,
-      price,
-      duration
-    );
-    return _offerIndex;
+    emit ServiceOfferCreated(sid, offers.length - 1, price, duration);
+    return offers.length - 1;
   }
 
-  // Throw if service not found
-  // Throw if service owner is not the sender
-  // Throw if offer not found
-  function disableServiceOffer (bytes32 sid, uint offerIndex)
-    external
-    whenNotPaused
-    onlyServiceOwner(sid)
-  returns (uint _offerIndex) {
-    uint _serviceIndex = getServiceIndex(sid);
-    require(isServiceOfferExist(sid, offerIndex), "Offer not found");
-    services[_serviceIndex].offers[offerIndex].active = false;
-    emit ServiceOfferDisabled(
-      sid,
-      offerIndex
-    );
-    return offerIndex;
+  function disableServiceOffer(bytes32 sid, uint offerIndex) external whenNotPaused onlyServiceOwner(sid) whenServiceOfferExist(sid, offerIndex) {
+    services[sid].offers[offerIndex].active = false;
+    emit ServiceOfferDisabled(sid, offerIndex);
   }
 
-  // ------------------------------------------------------
-  // Purchase
-  // ------------------------------------------------------
-
-  // Throw if service not found
   function hasPurchased(bytes32 sid) external view returns (bool purchased) {
-    if (!isServicePurchaseExist(sid, msg.sender)) {
-      return false;
-    }
-    (uint _serviceIndex, uint _purchaseIndex) = getServicePurchaseIndexes(sid, msg.sender);
-    return services[_serviceIndex].purchases[_purchaseIndex].expirationDate >= now;
+    return services[sid].owner == msg.sender || services[sid].purchasers[msg.sender] >= now;
   }
 
-  // Throw if service not found
-  // Throw if offer not found
-  // Throw if offer is disable
-  // Throw if sender doesn't have enough balance
-  // Throw if sender didn't approve the contract on the ERC20
-  function purchase(bytes32 sid, uint offerIndex) external whenNotPaused returns (uint purchaseIndex) {
-    uint _serviceIndex = getServiceIndex(sid);
-    require(isServiceOfferExist(sid, offerIndex), "Offer not found");
-    Service storage _service = services[_serviceIndex];
-    Offer storage _offer = _service.offers[offerIndex];
+  function purchase(bytes32 sid, uint offerIndex) external whenNotPaused whenServiceExist(sid) notServiceOwner(sid) whenServiceOfferExist(sid, offerIndex) whenServiceOfferActive(sid, offerIndex) {
+    Service storage service = services[sid];
+    Offer storage offer = service.offers[offerIndex];
 
     // Check if offer is active, sender has enough balance and approved the transform
-    require(_offer.active, "Cannot purchase a disabled offer");
-    require(token.balanceOf(msg.sender) >= _offer.price, "Sender doesn't have enough balance to pay this service");
-    require(
-      token.allowance(msg.sender, address(this)) >= _offer.price,
-      "Sender didn't approve this contract to spend on his behalf. Execute approve function on the token contract"
-    );
+    require(token.balanceOf(msg.sender) >= offer.price, "Sender doesn't have enough balance to pay this service");
+    require(token.allowance(msg.sender, address(this)) >= offer.price, "Sender didn't approve this contract to spend on his behalf. Execute approve function on the token contract");
 
     // Transfer the token from sender to service owner
-    token.transferFrom(msg.sender, _service.owner, _offer.price);
+    token.transferFrom(msg.sender, service.owner, offer.price);
 
-    // Calculate expiration date
-    uint _baseExpirationDate = now;
-    uint _purchaseIndex;
-    if (isServicePurchaseExist(sid, msg.sender)) {
-      // If already purchased, update expiration
-      (, _purchaseIndex) = getServicePurchaseIndexes(sid, msg.sender);
+    uint expire = now + offer.duration;
+    if (service.purchasers[msg.sender] > now) {
+      expire = service.purchasers[msg.sender] + offer.duration;
     }
-    else {
-      // Create new purchase
-      _service.purchases.length++;
-      _purchaseIndex = _service.purchases.length - 1;
-    }
-    
-    Purchase storage _purchase = _service.purchases[_purchaseIndex];
 
-    // If current expiration date is later than now, use it
-    if (_purchase.expirationDate > _baseExpirationDate) {
-      _baseExpirationDate = _purchase.expirationDate;
-    }
-    uint _expirationDate = _baseExpirationDate + _offer.duration;
-
-    _purchase.purchaser = msg.sender;
-    _purchase.expirationDate = _expirationDate;
-    purchaserToSidToPurchase[msg.sender][sid] = _purchaseIndex;
-
-    // Emit event
-    emit ServicePurchased(
-      sid,
-      offerIndex,
-      msg.sender,
-      _offer.price,
-      _offer.duration,
-      _expirationDate
-    );
-    return _purchaseIndex;
+    service.purchasers[msg.sender] = expire;
+    service.purchasersList.push(msg.sender);
+    emit ServicePurchased(sid, offerIndex, msg.sender, offer.price, offer.duration, expire);
   }
 }
