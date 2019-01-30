@@ -143,85 +143,83 @@ contract Marketplace is Ownable, Pausable {
 
   // Throw if service not found
   function isServiceOwner(bytes32 sid) public view returns (bool) {
-    uint serviceIndex = getServiceIndex(sid);
-    return services[serviceIndex].owner == msg.sender;
+    uint _serviceIndex = getServiceIndex(sid);
+    return services[_serviceIndex].owner == msg.sender;
   }
 
   function isServiceSidExist(bytes32 sid) public view returns (bool) {
-    uint serviceIndex = sidToService[sid];
-    if (serviceIndex >= services.length) {
+    uint _serviceIndex = sidToService[sid];
+    if (_serviceIndex >= services.length) {
       return false;
     }
-    return services[serviceIndex].sid == sid;
+    return services[_serviceIndex].sid == sid;
   }
 
   function isServiceHashExist(bytes20 hash) public view returns (bool) {
-    VersionIndexes storage indexes = hashToVersion[hash];
-    if (indexes.serviceIndex >= services.length) {
+    VersionIndexes storage _indexes = hashToVersion[hash];
+    if (_indexes.serviceIndex >= services.length) {
       return false;
     }
-    Service storage service = services[indexes.serviceIndex];
-    if (indexes.versionIndex >= service.versions.length) {
+    Service storage _service = services[_indexes.serviceIndex];
+    if (_indexes.versionIndex >= _service.versions.length) {
       return false;
     }
-    Version storage version = service.versions[indexes.versionIndex];
-    return version.hash == hash;
+    return _service.versions[_indexes.versionIndex].hash == hash;
   }
 
   // Throw if service not found
   function isServicePurchaseExist(bytes32 sid, address purchaser) public view returns (bool) {
     uint _serviceIndex = getServiceIndex(sid);
-    Service storage service = services[_serviceIndex];
+    Service storage _service = services[_serviceIndex];
     uint _purchaseIndex = purchaserToSidToPurchase[purchaser][sid];
-    if (_purchaseIndex >= service.purchases.length) {
+    if (_purchaseIndex >= _service.purchases.length) {
       return false;
     }
-    Purchase storage purchase = service.purchases[_purchaseIndex];
-    return purchase.purchaser == purchaser;
+    return _service.purchases[_purchaseIndex].purchaser == purchaser;
   }
 
   // Getters
 
   // Throw if version not found
   function getServiceVersion(bytes20 _hash) external view returns (bytes20 hash, bytes memory metadata) {
-    (uint serviceIndex, uint versionIndex) = getServiceVersionIndexes(_hash);
-    Version storage version = services[serviceIndex].versions[versionIndex];
-    return (version.hash, version.metadata);
+    (uint _serviceIndex, uint _versionIndex) = getServiceVersionIndexes(_hash);
+    Version storage _version = services[_serviceIndex].versions[_versionIndex];
+    return (_version.hash, _version.metadata);
   }
 
   // Throw if service not found
   // Throw if version doesn't exist
   function getServiceVersionWithIndex(bytes32 sid, uint versionIndex) external view returns (bytes20 hash, bytes memory metadata) {
-    uint serviceIndex = getServiceIndex(sid);
-    require(versionIndex < services[serviceIndex].versions.length, "Version index is out of bounds");
-    Version storage version = services[serviceIndex].versions[versionIndex];
-    return (version.hash, version.metadata);
+    uint _serviceIndex = getServiceIndex(sid);
+    require(versionIndex < services[_serviceIndex].versions.length, "Version index is out of bounds");
+    Version storage _version = services[_serviceIndex].versions[versionIndex];
+    return (_version.hash, _version.metadata);
   }
 
   // Throw if service not found
   // Throw if purchase not found
   function getServicePurchase(bytes32 sid, address _purchaser) public view returns (address purchaser, uint expirationDate) {
-    (uint serviceIndex, uint purchaseIndex) = getServicePurchaseIndexes(sid, _purchaser);
-    Purchase storage purchase = services[serviceIndex].purchases[purchaseIndex];
-    return (purchase.purchaser, purchase.expirationDate);
+    (uint _serviceIndex, uint _purchaseIndex) = getServicePurchaseIndexes(sid, _purchaser);
+    Purchase storage _purchase = services[_serviceIndex].purchases[_purchaseIndex];
+    return (_purchase.purchaser, _purchase.expirationDate);
   }
 
   // Throw if service not found
   // Throw if purchase doesn't exist
   function getServicePurchaseWithIndex(bytes32 sid, uint purchaseIndex) external view returns (address purchaser, uint expirationDate) {
-    uint serviceIndex = getServiceIndex(sid);
-    require(purchaseIndex < services[serviceIndex].purchases.length, "Purchase index is out of bounds");
-    Purchase storage purchase = services[serviceIndex].purchases[purchaseIndex];
-    return (purchase.purchaser, purchase.expirationDate);
+    uint _serviceIndex = getServiceIndex(sid);
+    require(purchaseIndex < services[_serviceIndex].purchases.length, "Purchase index is out of bounds");
+    Purchase storage _purchase = services[_serviceIndex].purchases[purchaseIndex];
+    return (_purchase.purchaser, _purchase.expirationDate);
   }
 
   // Throw if service not found
   // Throw if offer doesn't exist
   function getServiceOfferWithIndex(bytes32 sid, uint offerIndex) external view returns (uint price, uint duration, bool active) {
-    uint serviceIndex = getServiceIndex(sid);
-    require(offerIndex < services[serviceIndex].offers.length, "Offer index is out of bounds");
-    Offer storage offer = services[serviceIndex].offers[offerIndex];
-    return (offer.price, offer.duration, offer.active);
+    uint _serviceIndex = getServiceIndex(sid);
+    require(offerIndex < services[_serviceIndex].offers.length, "Offer index is out of bounds");
+    Offer storage _offer = services[_serviceIndex].offers[offerIndex];
+    return (_offer.price, _offer.duration, _offer.active);
   }
 
   // Count
@@ -232,20 +230,20 @@ contract Marketplace is Ownable, Pausable {
 
   // Throw if service not found
   function getServiceVersionsCount(bytes32 sid) external view returns (uint) {
-    uint serviceIndex = getServiceIndex(sid);
-    return services[serviceIndex].versions.length;
+    uint _serviceIndex = getServiceIndex(sid);
+    return services[_serviceIndex].versions.length;
   }
 
   // Throw if service not found
   function getServicePurchasesCount(bytes32 sid) external view returns (uint) {
-    uint serviceIndex = getServiceIndex(sid);
-    return services[serviceIndex].purchases.length;
+    uint _serviceIndex = getServiceIndex(sid);
+    return services[_serviceIndex].purchases.length;
   }
 
   // Throw if service not found
   function getServiceOffersCount(bytes32 sid) external view returns (uint) {
-    uint serviceIndex = getServiceIndex(sid);
-    return services[serviceIndex].offers.length;
+    uint _serviceIndex = getServiceIndex(sid);
+    return services[_serviceIndex].offers.length;
   }
 
   // ------------------------------------------------------
@@ -258,13 +256,13 @@ contract Marketplace is Ownable, Pausable {
   function createService (bytes32 sid) external whenNotPaused returns (uint serviceIndex) {
     require(!isServiceSidExist(sid), "Service's sid is already used");
     services.length++;
-    Service storage service = services[services.length - 1];
-    service.sid = sid;
-    service.owner = msg.sender;
+    Service storage _service = services[services.length - 1];
+    _service.sid = sid;
+    _service.owner = msg.sender;
     sidToService[sid] = services.length - 1;
     emit ServiceCreated(
       sid,
-      service.owner
+      _service.owner
     );
     return services.length - 1;
   }
@@ -275,15 +273,15 @@ contract Marketplace is Ownable, Pausable {
   // Throw if new owner is current owner
   function transferServiceOwnership (bytes32 sid, address newOwner) external whenNotPaused onlyServiceOwner(sid) {
     require(newOwner != address(0), "New Owner cannot be address 0");
-    uint serviceIndex = getServiceIndex(sid);
-    Service storage service = services[serviceIndex];
-    require(newOwner != service.owner, "New Owner is already current owner");
+    uint _serviceIndex = getServiceIndex(sid);
+    Service storage _service = services[_serviceIndex];
+    require(newOwner != _service.owner, "New Owner is already current owner");
     emit ServiceOwnershipTransferred(
       sid,
-      service.owner,
+      _service.owner,
       newOwner
     );
-    service.owner = newOwner;
+    _service.owner = newOwner;
   }
 
   // Manage Version
@@ -296,15 +294,15 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
   returns (uint versionIndex) {
-    uint serviceIndex = getServiceIndex(sid);
+    uint _serviceIndex = getServiceIndex(sid);
     require(!isServiceHashExist(hash), "Version's hash already exists");
-    services[serviceIndex].versions.push(Version({
+    services[_serviceIndex].versions.push(Version({
       hash: hash,
       metadata: metadata
     }));
-    uint _versionIndex = services[serviceIndex].versions.length - 1;
+    uint _versionIndex = services[_serviceIndex].versions.length - 1;
     hashToVersion[hash] = VersionIndexes(
-      serviceIndex,
+      _serviceIndex,
       _versionIndex
     );
     emit ServiceVersionCreated(
@@ -325,13 +323,13 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
   returns (uint offerIndex) {
-    uint serviceIndex = getServiceIndex(sid);
-    services[serviceIndex].offers.push(Offer({
+    uint _serviceIndex = getServiceIndex(sid);
+    services[_serviceIndex].offers.push(Offer({
       price: price,
       duration: duration,
       active: true
     }));
-    uint _offerIndex = services[serviceIndex].offers.length - 1;
+    uint _offerIndex = services[_serviceIndex].offers.length - 1;
     emit ServiceOfferCreated(
       sid,
       _offerIndex,
@@ -348,8 +346,8 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
   returns (uint _offerIndex) {
-    uint serviceIndex = getServiceIndex(sid);
-    services[serviceIndex].offers[offerIndex].active = false;
+    uint _serviceIndex = getServiceIndex(sid);
+    services[_serviceIndex].offers[offerIndex].active = false;
     emit ServiceOfferDisabled(
       sid,
       offerIndex
@@ -366,8 +364,8 @@ contract Marketplace is Ownable, Pausable {
     if (!isServicePurchaseExist(sid, msg.sender)) {
       return false;
     }
-    (, uint expirationDate) = getServicePurchase(sid, msg.sender);
-    return expirationDate >= now;
+    (, uint _expirationDate) = getServicePurchase(sid, msg.sender);
+    return _expirationDate >= now;
   }
 
   // Throw if service not found
@@ -376,20 +374,20 @@ contract Marketplace is Ownable, Pausable {
   // Throw if sender didn't approve the contract on the ERC20
   function purchase(bytes32 sid, uint offerIndex) external whenNotPaused returns (uint purchaseIndex) {
     uint _serviceIndex = getServiceIndex(sid);
-    Service storage service = services[_serviceIndex];
-    Offer storage offer = service.offers[offerIndex];
+    Service storage _service = services[_serviceIndex];
+    Offer storage _offer = _service.offers[offerIndex];
     // TODO: add error if offerIndex doesn't exist!
 
     // Check if offer is active, sender has enough balance and approved the transform
-    require(offer.active, "Cannot purchase a disabled offer");
-    require(token.balanceOf(msg.sender) >= offer.price, "Sender doesn't have enough balance to pay this service");
+    require(_offer.active, "Cannot purchase a disabled offer");
+    require(token.balanceOf(msg.sender) >= _offer.price, "Sender doesn't have enough balance to pay this service");
     require(
-      token.allowance(msg.sender, address(this)) >= offer.price,
+      token.allowance(msg.sender, address(this)) >= _offer.price,
       "Sender didn't approve this contract to spend on his behalf. Execute approve function on the token contract"
     );
 
     // Transfer the token from sender to service owner
-    token.transferFrom(msg.sender, service.owner, offer.price);
+    token.transferFrom(msg.sender, _service.owner, _offer.price);
 
     // Calculate expiration date
     uint _expirationDate = now;
@@ -397,22 +395,22 @@ contract Marketplace is Ownable, Pausable {
     if (isServicePurchaseExist(sid, msg.sender)) {
       // If already purchased, update expiration
       (, _purchaseIndex) = getServicePurchaseIndexes(sid, msg.sender);
-      Purchase storage _purchase = service.purchases[_purchaseIndex];
+      Purchase storage _purchase = _service.purchases[_purchaseIndex];
       // If current expiration date is later than now, use it
       if (_purchase.expirationDate > _expirationDate) {
         _expirationDate = _purchase.expirationDate;
       }
-      _expirationDate = _expirationDate + offer.duration;
+      _expirationDate = _expirationDate + _offer.duration;
       _purchase.expirationDate = _expirationDate;
     }
     else {
       // Create new purchase
-      _expirationDate = _expirationDate + offer.duration;
-      service.purchases.push(Purchase({
+      _expirationDate = _expirationDate + _offer.duration;
+      _service.purchases.push(Purchase({
         purchaser: msg.sender,
         expirationDate: _expirationDate
       }));
-      _purchaseIndex = service.purchases.length - 1;
+      _purchaseIndex = _service.purchases.length - 1;
       purchaserToSidToPurchase[msg.sender][sid] = _purchaseIndex;
     }
 
@@ -421,8 +419,8 @@ contract Marketplace is Ownable, Pausable {
       sid,
       offerIndex,
       msg.sender,
-      offer.price,
-      offer.duration,
+      _offer.price,
+      _offer.duration,
       _expirationDate
     );
     return _purchaseIndex;
