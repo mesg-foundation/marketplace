@@ -186,6 +186,13 @@ contract Marketplace is Ownable, Pausable {
 
   // Getters
 
+  // Throw if service not found
+  function getService(bytes32 _sid) external view returns (address owner, bytes32 sid) {
+    uint _serviceIndex = getServiceIndex(_sid);
+    Service storage _service = services[_serviceIndex];
+    return (_service.owner, _service.sid);
+  }
+
   // Throw if version not found
   function getServiceVersion(bytes20 _hash) external view returns (bytes20 hash, bytes memory metadata) {
     (uint _serviceIndex, uint _versionIndex) = getServiceVersionIndexes(_hash);

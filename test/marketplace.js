@@ -171,7 +171,7 @@ contract('Marketplace', async ([
         assert.equal(await marketplace.getServicesCount(), 1)
         const serviceIndex = await marketplace.getServiceIndex(sidHex)
         assert.equal(serviceIndex, 0)
-        const service = await marketplace.services(serviceIndex)
+        const service = await marketplace.getService(sidHex)
         assertService(service, sid, developer)
         assert.isTrue(await marketplace.isServiceSidExist(sidHex))
       })
@@ -180,9 +180,12 @@ contract('Marketplace', async ([
         await truffleAssert.reverts(marketplace.createService(sidHex, { from: developer2 }), errorServiceSidAlreadyUsed)
       })
 
-      it('should fail when getting service with not existing sid', async () => {
+      it('should fail when getting service index with not existing sid', async () => {
         await truffleAssert.reverts(marketplace.getServiceIndex(sidNotExistHex), errorServiceNotFound)
-        assert.isFalse(await marketplace.isServiceSidExist(sidNotExistHex))
+      })
+
+      it('should fail when getting service with not existing sid', async () => {
+        await truffleAssert.reverts(marketplace.getService(sidNotExistHex), errorServiceNotFound)
       })
 
       it('should create a second service', async () => {
@@ -194,7 +197,7 @@ contract('Marketplace', async ([
         assert.equal(await marketplace.getServicesCount(), 2)
         const serviceIndex = await marketplace.getServiceIndex(sid2Hex)
         assert.equal(serviceIndex, 1)
-        const service = await marketplace.services(serviceIndex)
+        const service = await marketplace.getService(sid2Hex)
         assertService(service, sid2, developer)
       })
     })
