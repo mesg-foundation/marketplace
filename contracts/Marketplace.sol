@@ -75,7 +75,6 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceVersionCreated(
     bytes32 indexed sid,
-    uint indexed versionIndex,
     bytes20 indexed hash,
     bytes metadata
   );
