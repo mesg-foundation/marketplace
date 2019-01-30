@@ -1,2 +1,7 @@
 build
 node_modules
+.envrc
+.log
+coverage
+coverage.json
+comparison

@@ -5,22 +5,31 @@
   "scripts": {
     "truffle": "truffle",
     "compile": "truffle compile",
-    "migrate": "truffle migrate",
-    "test": "truffle test"
+    "migrate": "truffle migrate --interactive",
+    "lint:sol": "solium -d .",
+    "lint:sol:fix": "solium --fix -d .",
+    "test": "truffle test",
+    "typescript": "npm run compile && typechain --target=web3-1.0.0 --outDir=build/typescript './build/contracts/*.json'",
+    "coverage": "solidity-coverage"
   },
   "keywords": [],
   "author": "Anthony Estebe <anthony@mesg.com>",
   "license": "ISC",
   "dependencies": {
-    "openzeppelin-solidity": "^2.0.0",
-    "truffle": "^5.0.0"
+    "openzeppelin-solidity": "^2.1.2",
+    "solidity-coverage": "git+https://github.com/rotcivegaf/solidity-coverage.git#5875f5b7bc74d447f3312c9c0e9fc7814b482477",
+    "truffle": "^5.0.2",
+    "truffle-hdwallet-provider": "^1.0.2"
   },
   "directories": {
     "test": "test"
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "truffle-assertions": "^0.7.1"
+    "eth-gas-reporter": "^0.1.12",
+    "ethlint": "^1.2.2",
+    "truffle-assertions": "^0.7.2",
+    "typechain": "^0.3.11"
   },
   "description": ""
 }
