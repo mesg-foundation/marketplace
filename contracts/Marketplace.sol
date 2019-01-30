@@ -330,12 +330,14 @@ contract Marketplace is Ownable, Pausable {
     onlyServiceOwner(sid)
   returns (uint offerIndex) {
     uint _serviceIndex = getServiceIndex(sid);
-    services[_serviceIndex].offers.push(Offer({
+    Service storage _service = services[_serviceIndex];
+    require(_service.versions.length > 0, "Cannot create an offer on a service without version");
+    _service.offers.push(Offer({
       price: price,
       duration: duration,
       active: true
     }));
-    uint _offerIndex = services[_serviceIndex].offers.length - 1;
+    uint _offerIndex = _service.offers.length - 1;
     emit ServiceOfferCreated(
       sid,
       _offerIndex,

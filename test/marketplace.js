@@ -21,6 +21,7 @@ const errorServicePurchaseOfferDisabled = 'Cannot purchase a disabled offer'
 const errorServicePurchaseDidNotAllow = 'Sender didn\'t approve this contract to spend on his behalf. Execute approve function on the token contract'
 const errorTransferOwnershipAddress0 = 'New Owner cannot be address 0'
 const errorTransferOwnershipSameAddress = 'New Owner is already current owner'
+const errorServiceOfferNoVersion = 'Cannot create an offer on a service without version'
 
 // Assert functions
 
@@ -202,6 +203,10 @@ contract('Marketplace', async ([
       it('should not have any version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(sidHex), 0)
         assert.isFalse(await marketplace.isServiceHashExist(version.hash))
+      })
+
+      it('should fail creating offer on service with no version', async () => {
+        await truffleAssert.reverts(marketplace.createServiceOffer(sidHex, offer.price, offer.duration, { from: developer }), errorServiceOfferNoVersion)
       })
 
       it('should create a version', async () => {
