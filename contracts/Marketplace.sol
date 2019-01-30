@@ -408,29 +408,29 @@ contract Marketplace is Ownable, Pausable {
     token.transferFrom(msg.sender, _service.owner, _offer.price);
 
     // Calculate expiration date
-    uint _expirationDate = now;
+    uint _baseExpirationDate = now;
     uint _purchaseIndex;
     if (isServicePurchaseExist(sid, msg.sender)) {
       // If already purchased, update expiration
       (, _purchaseIndex) = getServicePurchaseIndexes(sid, msg.sender);
-      Purchase storage _purchase = _service.purchases[_purchaseIndex];
-      // If current expiration date is later than now, use it
-      if (_purchase.expirationDate > _expirationDate) {
-        _expirationDate = _purchase.expirationDate;
-      }
-      _expirationDate = _expirationDate + _offer.duration;
-      _purchase.expirationDate = _expirationDate;
     }
     else {
       // Create new purchase
-      _expirationDate = _expirationDate + _offer.duration;
-      _service.purchases.push(Purchase({
-        purchaser: msg.sender,
-        expirationDate: _expirationDate
-      }));
+      _service.purchases.length++;
       _purchaseIndex = _service.purchases.length - 1;
-      purchaserToSidToPurchase[msg.sender][sid] = _purchaseIndex;
     }
+    
+    Purchase storage _purchase = _service.purchases[_purchaseIndex];
+
+    // If current expiration date is later than now, use it
+    if (_purchase.expirationDate > _baseExpirationDate) {
+      _baseExpirationDate = _purchase.expirationDate;
+    }
+    uint _expirationDate = _baseExpirationDate + _offer.duration;
+
+    _purchase.purchaser = msg.sender;
+    _purchase.expirationDate = _expirationDate;
+    purchaserToSidToPurchase[msg.sender][sid] = _purchaseIndex;
 
     // Emit event
     emit ServicePurchased(
