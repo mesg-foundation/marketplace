@@ -169,8 +169,6 @@ contract('Marketplace', async ([
 
       it('should have one service', async () => {
         assert.equal(await marketplace.getServicesCount(), 1)
-        const serviceIndex = await marketplace.getServiceIndex(sidHex)
-        assert.equal(serviceIndex, 0)
         const service = await marketplace.getService(sidHex)
         assertService(service, sid, developer)
         assert.isTrue(await marketplace.isServiceSidExist(sidHex))
@@ -178,10 +176,6 @@ contract('Marketplace', async ([
 
       it('should not be able to create a service with existing sid', async () => {
         await truffleAssert.reverts(marketplace.createService(sidHex, { from: developer2 }), errorServiceSidAlreadyUsed)
-      })
-
-      it('should fail when getting service index with not existing sid', async () => {
-        await truffleAssert.reverts(marketplace.getServiceIndex(sidNotExistHex), errorServiceNotFound)
       })
 
       it('should fail when getting service with not existing sid', async () => {
@@ -195,8 +189,6 @@ contract('Marketplace', async ([
 
       it('should have two service', async () => {
         assert.equal(await marketplace.getServicesCount(), 2)
-        const serviceIndex = await marketplace.getServiceIndex(sid2Hex)
-        assert.equal(serviceIndex, 1)
         const service = await marketplace.getService(sid2Hex)
         assertService(service, sid2, developer)
       })
@@ -219,10 +211,7 @@ contract('Marketplace', async ([
 
       it('should have one version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(sidHex), 1)
-        const versionIndex = await marketplace.getServiceVersionIndexes(version.hash)
-        assert.equal(versionIndex.serviceIndex, 0)
-        assert.equal(versionIndex.versionIndex, 0)
-        const _version = await marketplace.getServiceVersionWithIndex(sidHex, versionIndex.versionIndex)
+        const _version = await marketplace.getServiceVersionWithIndex(sidHex, 0)
         assertServiceVersion(_version, version.hash, version.metadata)
         const __version = await marketplace.getServiceVersion(version.hash)
         assertServiceVersion(__version, version.hash, version.metadata)
@@ -237,18 +226,12 @@ contract('Marketplace', async ([
       it('should have two version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(sidHex), 2)
         // check version
-        const versionIndex = await marketplace.getServiceVersionIndexes(version.hash)
-        assert.equal(versionIndex.serviceIndex, 0)
-        assert.equal(versionIndex.versionIndex, 0)
-        const _version = await marketplace.getServiceVersionWithIndex(sidHex, versionIndex.versionIndex)
+        const _version = await marketplace.getServiceVersionWithIndex(sidHex, 0)
         assertServiceVersion(_version, version.hash, version.metadata)
         const __version = await marketplace.getServiceVersion(version.hash)
         assertServiceVersion(__version, version.hash, version.metadata)
         // check version2
-        const versionIndex2 = await marketplace.getServiceVersionIndexes(version2.hash)
-        assert.equal(versionIndex2.serviceIndex, 0)
-        assert.equal(versionIndex2.versionIndex, 1)
-        const _version2 = await marketplace.getServiceVersionWithIndex(sidHex, versionIndex2.versionIndex)
+        const _version2 = await marketplace.getServiceVersionWithIndex(sidHex, 1)
         assertServiceVersion(_version2, version2.hash, version2.metadata)
         const __version2 = await marketplace.getServiceVersion(version2.hash)
         assertServiceVersion(__version2, version2.hash, version2.metadata)
@@ -260,10 +243,6 @@ contract('Marketplace', async ([
 
       it('should fail when getting service version count with not existing hash', async () => {
         await truffleAssert.reverts(marketplace.getServiceVersionsCount(sidNotExistHex), errorServiceNotFound)
-      })
-
-      it('should fail when getting service version indexes with not existing hash', async () => {
-        await truffleAssert.reverts(marketplace.getServiceVersionIndexes(versionNotExisting.hash), errorServiceVersionNotFound)
       })
 
       it('should fail when getting service version with not existing hash', async () => {
@@ -381,9 +360,6 @@ contract('Marketplace', async ([
         assert.equal(await marketplace.getServicePurchasesCount(sidHex), 1)
         const purchase = await marketplace.getServicePurchaseWithIndex(sidHex, 0)
         assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000 + offer.duration))
-        const purchaseIndex = await marketplace.getServicePurchaseIndexes(sidHex, purchaser)
-        assert.equal(purchaseIndex.serviceIndex, 0)
-        assert.equal(purchaseIndex.purchaseIndex, 0)
       })
 
       it('tokens should have been transferred from purchaser to developer', async () => {
@@ -405,9 +381,6 @@ contract('Marketplace', async ([
         assert.equal(await marketplace.getServicePurchasesCount(sidHex), 1)
         const purchase = await marketplace.getServicePurchaseWithIndex(sidHex, 0)
         assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000 + offer.duration * offer2.duration))
-        const purchaseIndex = await marketplace.getServicePurchaseIndexes(sidHex, purchaser)
-        assert.equal(purchaseIndex.serviceIndex, 0)
-        assert.equal(purchaseIndex.purchaseIndex, 0)
       })
 
       it('tokens should have been transferred from purchaser to developer again with second offer', async () => {
@@ -428,14 +401,6 @@ contract('Marketplace', async ([
 
       it('should fail getting purchase index with non existing purchase', async () => {
         await truffleAssert.reverts(marketplace.getServicePurchaseWithIndex(sidHex, 10), errorServicePurchaseNotFound)
-      })
-
-      it('should fail getting purchase indexes with non existing service', async () => {
-        await truffleAssert.reverts(marketplace.getServicePurchaseIndexes(sidNotExistHex, purchaser), errorServiceNotFound)
-      })
-
-      it('should fail getting purchase indexes with non existing purchaser', async () => {
-        await truffleAssert.reverts(marketplace.getServicePurchaseIndexes(sidHex, other), errorServicePurchaseNotFound)
       })
 
       it('should fail when marketplace is not allowed to spend on behalf of purchaser', async () => {
@@ -475,9 +440,6 @@ contract('Marketplace', async ([
         assert.equal(await marketplace.getServicePurchasesCount(sidHex), 2)
         const purchase = await marketplace.getServicePurchaseWithIndex(sidHex, 1)
         assertServicePurchase(purchase, purchaser2, Math.floor(Date.now() / 1000 + offer2.duration))
-        const purchaseIndex = await marketplace.getServicePurchaseIndexes(sidHex, purchaser2)
-        assert.equal(purchaseIndex.serviceIndex, 0)
-        assert.equal(purchaseIndex.purchaseIndex, 1)
       })
 
       it('hasPurchase should fail when service doesn\'t exist', async () => {

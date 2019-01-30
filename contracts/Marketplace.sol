@@ -116,23 +116,23 @@ contract Marketplace is Ownable, Pausable {
   // View functions
   // ------------------------------------------------------
 
-  // Index
+  // Index - Internal
 
   // Throw if service not found
-  function getServiceIndex(bytes32 sid) public view returns (uint serviceIndex) {
+  function getServiceIndex(bytes32 sid) internal view returns (uint serviceIndex) {
     require(isServiceSidExist(sid), "Service not found");
     return sidToService[sid];
   }
 
   // Throw if version not found
-  function getServiceVersionIndexes(bytes20 hash) public view returns (uint serviceIndex, uint versionIndex) {
+  function getServiceVersionIndexes(bytes20 hash) internal view returns (uint serviceIndex, uint versionIndex) {
     require(isServiceHashExist(hash), "Version not found");
     return (hashToVersion[hash].serviceIndex, hashToVersion[hash].versionIndex);
   }
 
   // Throw if service not found
   // Throw if purchase not found
-  function getServicePurchaseIndexes(bytes32 sid, address purchaser) public view returns (uint serviceIndex, uint purchaseIndex) {
+  function getServicePurchaseIndexes(bytes32 sid, address purchaser) internal view returns (uint serviceIndex, uint purchaseIndex) {
     uint _serviceIndex = getServiceIndex(sid);
     require(isServicePurchaseExist(sid, purchaser), "Purchase not found");
     uint _purchaserIndex = purchaserToSidToPurchase[purchaser][sid];
