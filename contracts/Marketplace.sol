@@ -178,6 +178,12 @@ contract Marketplace is Ownable, Pausable {
     return _service.purchases[_purchaseIndex].purchaser == purchaser;
   }
 
+  // Throw if service not found
+  function isServiceOfferExist(bytes32 sid, uint offerIndex) public view returns (bool) {
+    uint _serviceIndex = getServiceIndex(sid);
+    return offerIndex < services[_serviceIndex].offers.length;
+  }
+
   // Getters
 
   // Throw if version not found
@@ -188,10 +194,10 @@ contract Marketplace is Ownable, Pausable {
   }
 
   // Throw if service not found
-  // Throw if version doesn't exist
+  // Throw if version not found
   function getServiceVersionWithIndex(bytes32 sid, uint versionIndex) external view returns (bytes20 hash, bytes memory metadata) {
     uint _serviceIndex = getServiceIndex(sid);
-    require(versionIndex < services[_serviceIndex].versions.length, "Version index is out of bounds");
+    require(versionIndex < services[_serviceIndex].versions.length, "Version not found");
     Version storage _version = services[_serviceIndex].versions[versionIndex];
     return (_version.hash, _version.metadata);
   }
@@ -205,19 +211,19 @@ contract Marketplace is Ownable, Pausable {
   }
 
   // Throw if service not found
-  // Throw if purchase doesn't exist
+  // Throw if purchase not found
   function getServicePurchaseWithIndex(bytes32 sid, uint purchaseIndex) external view returns (address purchaser, uint expirationDate) {
     uint _serviceIndex = getServiceIndex(sid);
-    require(purchaseIndex < services[_serviceIndex].purchases.length, "Purchase index is out of bounds");
+    require(purchaseIndex < services[_serviceIndex].purchases.length, "Purchase not found");
     Purchase storage _purchase = services[_serviceIndex].purchases[purchaseIndex];
     return (_purchase.purchaser, _purchase.expirationDate);
   }
 
   // Throw if service not found
-  // Throw if offer doesn't exist
+  // Throw if offer not found
   function getServiceOfferWithIndex(bytes32 sid, uint offerIndex) external view returns (uint price, uint duration, bool active) {
     uint _serviceIndex = getServiceIndex(sid);
-    require(offerIndex < services[_serviceIndex].offers.length, "Offer index is out of bounds");
+    require(isServiceOfferExist(sid, offerIndex), "Offer not found");
     Offer storage _offer = services[_serviceIndex].offers[offerIndex];
     return (_offer.price, _offer.duration, _offer.active);
   }
@@ -341,12 +347,14 @@ contract Marketplace is Ownable, Pausable {
 
   // Throw if service not found
   // Throw if service owner is not the sender
+  // Throw if offer not found
   function disableServiceOffer (bytes32 sid, uint offerIndex)
     external
     whenNotPaused
     onlyServiceOwner(sid)
   returns (uint _offerIndex) {
     uint _serviceIndex = getServiceIndex(sid);
+    require(isServiceOfferExist(sid, offerIndex), "Offer not found");
     services[_serviceIndex].offers[offerIndex].active = false;
     emit ServiceOfferDisabled(
       sid,
@@ -369,14 +377,15 @@ contract Marketplace is Ownable, Pausable {
   }
 
   // Throw if service not found
+  // Throw if offer not found
   // Throw if offer is disable
   // Throw if sender doesn't have enough balance
   // Throw if sender didn't approve the contract on the ERC20
   function purchase(bytes32 sid, uint offerIndex) external whenNotPaused returns (uint purchaseIndex) {
     uint _serviceIndex = getServiceIndex(sid);
+    require(isServiceOfferExist(sid, offerIndex), "Offer not found");
     Service storage _service = services[_serviceIndex];
     Offer storage _offer = _service.offers[offerIndex];
-    // TODO: add error if offerIndex doesn't exist!
 
     // Check if offer is active, sender has enough balance and approved the transform
     require(_offer.active, "Cannot purchase a disabled offer");
