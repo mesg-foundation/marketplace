@@ -319,7 +319,6 @@ contract Marketplace is Ownable, Pausable {
     );
     emit ServiceVersionCreated(
       sid,
-      _versionIndex,
       hash,
       metadata
     );
