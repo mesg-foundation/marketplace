@@ -13,7 +13,6 @@ const errorServiceOwner = 'Service owner is not the same as the sender'
 const errorServiceSidAlreadyUsed = 'Service\'s sid is already used'
 const errorServiceNotFound = 'Service not found'
 const errorServiceVersionNotFound = 'Version not found'
-const errorServicePurchaseNotFound = 'Purchase not found'
 const errorServiceVersionHashAlreadyExist = 'Version\'s hash already exists'
 const errorServicePurchaseAlreadyPurchase = 'Sender already purchased this service'
 const errorServicePurchaseNotEnoughBalance = 'Sender doesn\'t have enough balance to pay this service'
@@ -21,6 +20,9 @@ const errorServicePurchaseOfferDisabled = 'Cannot purchase a disabled offer'
 const errorServicePurchaseDidNotAllow = 'Sender didn\'t approve this contract to spend on his behalf. Execute approve function on the token contract'
 const errorTransferOwnershipAddress0 = 'New Owner cannot be address 0'
 const errorTransferOwnershipSameAddress = 'New Owner is already current owner'
+const errorVersionIndexOutOfBound = 'Version index is out of bounds'
+const errorPurchaseIndexOutOfBound = 'Purchase index is out of bounds'
+const errorOfferIndexOutOfBound = 'Offer index is out of bounds'
 
 // Assert functions
 
@@ -28,7 +30,6 @@ const errorTransferOwnershipSameAddress = 'New Owner is already current owner'
 const assertEventServiceCreated = (tx, serviceIndex, sid, owner) => {
   truffleAssert.eventEmitted(tx, 'ServiceCreated')
   const event = tx.logs[0].args
-  console.log('event.sid', event.sid)
   assert.equal(hexToAscii(event.sid), sid)
   assert.equal(event.owner, owner)
 }
@@ -102,6 +103,7 @@ const sidHex = asciiToHex(sid)
 const sid2 = 'test-service-1'
 const sid2Hex = asciiToHex(sid2)
 const sidNotExist = 'test-service-not-exist'
+const sidNotExistHex = asciiToHex(sidNotExist)
 const offer = {
   price: 1000,
   duration: 3600
@@ -155,6 +157,12 @@ contract('Marketplace', async ([
     })
 
     describe('service creation', async () => {
+      it('should not have any service', async () => {
+        assert.equal(await marketplace.getServicesCount(), 0)
+        assert.isFalse(await marketplace.isServiceSidExist(sidNotExistHex))
+        assert.isFalse(await marketplace.isServiceHashExist(version.hash))
+      })
+
       it('should create a service', async () => {
         const tx = await marketplace.createService(sidHex, { from: developer })
         assertEventServiceCreated(tx, 0, sid, developer)
@@ -162,19 +170,21 @@ contract('Marketplace', async ([
 
       it('should have one service', async () => {
         assert.equal(await marketplace.getServicesCount(), 1)
-        const serviceIndex = await marketplace.sidToService(sidHex)
+        const serviceIndex = await marketplace.getServiceIndex(sidHex)
         assert.equal(serviceIndex, 0)
         const service = await marketplace.services(serviceIndex)
         assertService(service, sid, developer)
+        assert.isTrue(await marketplace.isServiceSidExist(sidHex))
       })
 
       it('should not be able to create a service with existing sid', async () => {
         await truffleAssert.reverts(marketplace.createService(sidHex, { from: developer2 }), errorServiceSidAlreadyUsed)
       })
 
-      // it('should fail when getting service with not existing sid', async () => {
-      //   await truffleAssert.reverts(marketplace.sidToService(asciiToHex(sidNotExist)), errorServiceNotFound)
-      // })
+      it('should fail when getting service with not existing sid', async () => {
+        await truffleAssert.reverts(marketplace.getServiceIndex(sidNotExistHex), errorServiceNotFound)
+        assert.isFalse(await marketplace.isServiceSidExist(sidNotExistHex))
+      })
 
       it('should create a second service', async () => {
         const tx = await marketplace.createService(sid2Hex, { from: developer })
@@ -183,7 +193,7 @@ contract('Marketplace', async ([
 
       it('should have two service', async () => {
         assert.equal(await marketplace.getServicesCount(), 2)
-        const serviceIndex = await marketplace.sidToService(sid2Hex)
+        const serviceIndex = await marketplace.getServiceIndex(sid2Hex)
         assert.equal(serviceIndex, 1)
         const service = await marketplace.services(serviceIndex)
         assertService(service, sid2, developer)
@@ -191,6 +201,11 @@ contract('Marketplace', async ([
     })
 
     describe('service version', async () => {
+      it('should not have any version', async () => {
+        assert.equal(await marketplace.getServiceVersionsCount(sidHex), 0)
+        assert.isFalse(await marketplace.isServiceHashExist(version.hash))
+      })
+
       it('should create a version', async () => {
         const tx = await marketplace.createServiceVersion(sidHex, version.hash, asciiToHex(version.metadata), { from: developer })
         assertEventServiceVersionCreated(tx, 0, sid, 0, version.hash, version.metadata)
@@ -198,11 +213,14 @@ contract('Marketplace', async ([
 
       it('should have one version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(sidHex), 1)
-        const versionIndex = await marketplace.hashToVersion(version.hash)
+        const versionIndex = await marketplace.getServiceVersionIndexes(version.hash)
         assert.equal(versionIndex.serviceIndex, 0)
         assert.equal(versionIndex.versionIndex, 0)
-        const _version = await marketplace.getServiceVersion(sidHex, versionIndex.versionIndex)
+        const _version = await marketplace.getServiceVersionWithIndex(sidHex, versionIndex.versionIndex)
         assertServiceVersion(_version, version.hash, version.metadata)
+        const __version = await marketplace.getServiceVersion(version.hash)
+        assertServiceVersion(__version, version.hash, version.metadata)
+        assert.isTrue(await marketplace.isServiceHashExist(version.hash))
       })
 
       it('should create an other version', async () => {
@@ -213,30 +231,45 @@ contract('Marketplace', async ([
       it('should have two version', async () => {
         assert.equal(await marketplace.getServiceVersionsCount(sidHex), 2)
         // check version
-        const versionIndex = await marketplace.hashToVersion(version.hash)
+        const versionIndex = await marketplace.getServiceVersionIndexes(version.hash)
         assert.equal(versionIndex.serviceIndex, 0)
         assert.equal(versionIndex.versionIndex, 0)
-        const _version = await marketplace.getServiceVersion(sidHex, versionIndex.versionIndex)
+        const _version = await marketplace.getServiceVersionWithIndex(sidHex, versionIndex.versionIndex)
         assertServiceVersion(_version, version.hash, version.metadata)
+        const __version = await marketplace.getServiceVersion(version.hash)
+        assertServiceVersion(__version, version.hash, version.metadata)
         // check version2
-        const versionIndex2 = await marketplace.hashToVersion(version2.hash)
+        const versionIndex2 = await marketplace.getServiceVersionIndexes(version2.hash)
         assert.equal(versionIndex2.serviceIndex, 0)
         assert.equal(versionIndex2.versionIndex, 1)
-        const _version2 = await marketplace.getServiceVersion(sidHex, versionIndex2.versionIndex)
+        const _version2 = await marketplace.getServiceVersionWithIndex(sidHex, versionIndex2.versionIndex)
         assertServiceVersion(_version2, version2.hash, version2.metadata)
+        const __version2 = await marketplace.getServiceVersion(version2.hash)
+        assertServiceVersion(__version2, version2.hash, version2.metadata)
       })
 
       it('should not be able to create a version with same hash', async () => {
         await truffleAssert.reverts(marketplace.createServiceVersion(sidHex, version2.hash, asciiToHex(version2.metadata), { from: developer }), errorServiceVersionHashAlreadyExist)
       })
 
-      // it('should fail when getting service version with not existing hash', async () => {
-      //   await truffleAssert.reverts(marketplace.hashToVersion(versionNotExisting.hash), errorServiceVersionNotFound)
-      // })
+      it('should fail when getting service version with not existing hash', async () => {
+        await truffleAssert.reverts(marketplace.getServiceVersionsCount(sidNotExistHex), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.getServiceVersionIndexes(versionNotExisting.hash), errorServiceVersionNotFound)
+        await truffleAssert.reverts(marketplace.getServiceVersion(versionNotExisting.hash), errorServiceVersionNotFound)
+      })
+
+      it('should fail when getting service or version that doesn\'t exist', async () => {
+        await truffleAssert.reverts(marketplace.getServiceVersionWithIndex(sidNotExistHex, 0), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.getServiceVersionWithIndex(sidHex, 10), errorVersionIndexOutOfBound)
+      })
 
       it('should create a version on second service', async () => {
         const tx = await marketplace.createServiceVersion(sid2Hex, version3.hash, asciiToHex(version3.metadata), { from: developer })
         assertEventServiceVersionCreated(tx, 1, sid2, 0, version3.hash, version3.metadata)
+      })
+
+      it('should fail when creating version with service that doesn\'t exist', async () => {
+        await truffleAssert.reverts(marketplace.createServiceVersion(sidNotExistHex, version.hash, asciiToHex(version.metadata), { from: developer }), errorServiceNotFound)
       })
     })
 
@@ -248,7 +281,7 @@ contract('Marketplace', async ([
 
       it('should have one offer', async () => {
         assert.equal(await marketplace.getServiceOffersCount(sidHex), 1)
-        const _offer = await marketplace.getServiceOffer(sidHex, 0)
+        const _offer = await marketplace.getServiceOfferWithIndex(sidHex, 0)
         assertServiceOffer(_offer, offer.price, offer.duration, true)
       })
 
@@ -260,10 +293,10 @@ contract('Marketplace', async ([
       it('should have two offer', async () => {
         assert.equal(await marketplace.getServiceOffersCount(sidHex), 2)
         // check offer
-        const _offer = await marketplace.getServiceOffer(sidHex, 0)
+        const _offer = await marketplace.getServiceOfferWithIndex(sidHex, 0)
         assertServiceOffer(_offer, offer.price, offer.duration, true)
         // check offer2
-        const _offer2 = await marketplace.getServiceOffer(sidHex, 1)
+        const _offer2 = await marketplace.getServiceOfferWithIndex(sidHex, 1)
         assertServiceOffer(_offer2, offer2.price, offer2.duration, true)
       })
 
@@ -279,8 +312,19 @@ contract('Marketplace', async ([
 
       it('offer should be disabled', async () => {
         assert.equal(await marketplace.getServiceOffersCount(sid2Hex), 1)
-        const _offer = await marketplace.getServiceOffer(sid2Hex, 0)
+        const _offer = await marketplace.getServiceOfferWithIndex(sid2Hex, 0)
         assertServiceOffer(_offer, offer.price, offer.duration, false)
+      })
+
+      it('should fail getting offer with non existing service or offer', async () => {
+        await truffleAssert.reverts(marketplace.getServiceOffersCount(sidNotExistHex), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.getServiceOfferWithIndex(sidNotExistHex, 0), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.getServiceOfferWithIndex(sidHex, 10), errorOfferIndexOutOfBound)
+      })
+
+      it('should fail creating or disabling offer with non existing service', async () => {
+        await truffleAssert.reverts(marketplace.createServiceOffer(sidNotExistHex, offer.price, offer.duration, { from: developer }), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.disableServiceOffer(sidNotExistHex, 0, { from: developer }), errorServiceNotFound)
       })
     })
 
@@ -298,9 +342,7 @@ contract('Marketplace', async ([
       it('should have purchase service', async () => {
         assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser }), true)
         assert.equal(await marketplace.getServicePurchasesCount(sidHex), 1)
-        // const purchaseIndex = await marketplace.getServicePurchaseIndex(sidHex, purchaser)
-        // assert.equal(purchaseIndex, 0)
-        const purchase = await marketplace.getServicePurchase(sidHex, 0)
+        const purchase = await marketplace.getServicePurchaseWithIndex(sidHex, 0)
         assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000), 0)
       })
 
@@ -310,6 +352,12 @@ contract('Marketplace', async ([
 
         assert.isTrue(purchaserBalance.eq(BN(purchaserInitialBalance).sub(BN(offer.price))))
         assert.isTrue(developerBalance.eq(BN(offer.price)))
+      })
+
+      it('should fail getting purchase with non existing service or purchase', async () => {
+        await truffleAssert.reverts(marketplace.getServicePurchasesCount(sidNotExistHex), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.getServicePurchaseWithIndex(sidNotExistHex, 0), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.getServicePurchaseWithIndex(sidHex, 10), errorPurchaseIndexOutOfBound)
       })
 
       it('should fail when marketplace is not allowed to spend on behalf of purchaser', async () => {
@@ -324,10 +372,6 @@ contract('Marketplace', async ([
         await truffleAssert.reverts(marketplace.purchase(sidHex, 0, { from: other }), errorServicePurchaseNotEnoughBalance)
       })
 
-      // it('should fail when getting service purchase with not existing purchase', async () => {
-      //   await truffleAssert.reverts(marketplace.getServicePurchaseIndex(sidHex, other), errorServicePurchaseNotFound)
-      // })
-
       it('should fail on purchase a service with a disabled offer', async () => {
         await token.approve(marketplace.address, offer2.price, { from: purchaser })
         await truffleAssert.reverts(marketplace.purchase(sid2Hex, 0, { from: purchaser }), errorServicePurchaseOfferDisabled)
@@ -340,6 +384,11 @@ contract('Marketplace', async ([
         assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser2 }), true)
         await sleep(2 * 1000)
         assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser2 }), false)
+      })
+
+      it('should fail when service doesn\'t exist', async () => {
+        await truffleAssert.reverts(marketplace.hasPurchased(sidNotExistHex, { from: purchaser2 }), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.purchase(sidNotExistHex, 0, { from: purchaser }), errorServiceNotFound)
       })
     })
 
@@ -369,6 +418,11 @@ contract('Marketplace', async ([
       it('original owner should not have the service ownership', async () => {
         assert.equal(await marketplace.getServicesCount(), 2)
         assert.isFalse(await marketplace.isServiceOwner(sidHex, { from: developer }))
+      })
+
+      it('should fail when service doesn\'t exist', async () => {
+        await truffleAssert.reverts(marketplace.transferServiceOwnership(sidNotExistHex, developer2, { from: developer2 }), errorServiceNotFound)
+        await truffleAssert.reverts(marketplace.isServiceOwner(sidNotExistHex), errorServiceNotFound)
       })
 
       it('should fail when new owner owner is address 0', async () => {
