@@ -11,16 +11,26 @@ module.exports = async (deployer, network) => {
   if (network === 'staging') {
     const marketplace = await Marketplace.deployed()
 
-    await marketplace.createService(asciiToHex('test-service-0'), 1000)
-    console.log('service created')
-    await marketplace.createServiceVersion(0, '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94', asciiToHex('https://raw.githubusercontent.com/mesg-foundation/marketplace/dev/metadata.json'))
-    console.log('version created')
-    await marketplace.createServiceVersion(0, '0xb444c79d6eccdcdd670d25997b5ec7d3f7f8fc94', asciiToHex('https://raw.githubusercontent.com/mesg-foundation/marketplace/dev/metadata.json'))
-    console.log('version created')
+    const sid = asciiToHex('test-service-0')
+    const sid2 = asciiToHex('test-service-1')
+    const metadata = asciiToHex('https://raw.githubusercontent.com/mesg-foundation/marketplace/dev/metadata.json')
 
-    await marketplace.createService(asciiToHex('test-service-1'), 2000)
+    await marketplace.createService(sid)
     console.log('service created')
-    await marketplace.createServiceVersion(1, '0xc5555c79d6eccdcdd670d25997b5ec7d3f7f8fc94', asciiToHex('https://raw.githubusercontent.com/mesg-foundation/marketplace/dev/metadata.json'))
+    await marketplace.createServiceVersion(sid, '0xa666c79d6eccdcdd670d25997b5ec7d3f7f8fc94', metadata)
     console.log('version created')
+    await marketplace.createServiceVersion(sid, '0xb444c79d6eccdcdd670d25997b5ec7d3f7f8fc94', metadata)
+    console.log('version created')
+    await marketplace.createServiceOffer(sid, 100, 60)
+    console.log('offer created')
+    await marketplace.createServiceOffer(sid, 1000, 3600 * 24)
+    console.log('offer created')
+
+    await marketplace.createService(sid2)
+    console.log('service created')
+    await marketplace.createServiceVersion(sid2, '0xc5555c79d6eccdcdd670d25997b5ec7d3f7f8fc94', metadata)
+    console.log('version created')
+    await marketplace.createServiceOffer(sid2, 2000, 3600 * 24)
+    console.log('offer created')
   }
 }
