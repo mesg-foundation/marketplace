@@ -13,8 +13,8 @@ const errorServiceOwner = 'Service owner is not the same as the sender'
 const errorServiceSidAlreadyUsed = 'Service\'s sid is already used'
 const errorServiceNotFound = 'Service not found'
 const errorServiceVersionNotFound = 'Version not found'
+const errorServicePurchaseNotFound = 'Purchase not found'
 const errorServiceVersionHashAlreadyExist = 'Version\'s hash already exists'
-const errorServicePurchaseAlreadyPurchase = 'Sender already purchased this service'
 const errorServicePurchaseNotEnoughBalance = 'Sender doesn\'t have enough balance to pay this service'
 const errorServicePurchaseOfferDisabled = 'Cannot purchase a disabled offer'
 const errorServicePurchaseDidNotAllow = 'Sender didn\'t approve this contract to spend on his behalf. Execute approve function on the token contract'
@@ -82,7 +82,7 @@ const assertServiceOffer = (offer, price, duration, active) => {
 }
 
 // Service purchase
-const assertEventServicePurchased = (tx, serviceIndex, sid, offerIndex, price, duration, purchaser) => {
+const assertEventServicePurchased = (tx, serviceIndex, sid, offerIndex, price, duration, purchaser, expirationDate) => {
   truffleAssert.eventEmitted(tx, 'ServicePurchased')
   const event = tx.logs[0].args
   assert.equal(hexToAscii(event.sid), sid)
@@ -90,12 +90,12 @@ const assertEventServicePurchased = (tx, serviceIndex, sid, offerIndex, price, d
   assert.equal(event.purchaser, purchaser)
   assert.equal(event.price, price)
   assert.equal(event.duration, duration)
+  assert.isTrue(event.expirationDate.eq(BN(expirationDate)) || event.expirationDate.eq(BN(expirationDate - 2)) || event.expirationDate.eq(BN(expirationDate - 1)))
 }
-const assertServicePurchase = (purchase, purchaser, date, offerIndex) => {
+const assertServicePurchase = (purchase, purchaser, expirationDate) => {
   assert.equal(purchase.purchaser, purchaser)
-  assert.equal(purchase.offerIndex, offerIndex)
-  // compare date with 0, -1 and -2 seconds
-  assert.isTrue(purchase.date.eq(BN(date)) || purchase.date.eq(BN(date - 2)) || purchase.date.eq(BN(date - 1)))
+  // compare expirationDate with 0, -1 and -2 seconds
+  assert.isTrue(purchase.expirationDate.eq(BN(expirationDate)) || purchase.expirationDate.eq(BN(expirationDate - 2)) || purchase.expirationDate.eq(BN(expirationDate - 1)))
 }
 
 const sid = 'test-service-0'
@@ -354,14 +354,17 @@ contract('Marketplace', async ([
       it('should purchase a service', async () => {
         await token.approve(marketplace.address, offer.price, { from: purchaser })
         const tx = await marketplace.purchase(sidHex, 0, { from: purchaser })
-        assertEventServicePurchased(tx, 0, sid, 0, offer.price, offer.duration, purchaser)
+        assertEventServicePurchased(tx, 0, sid, 0, offer.price, offer.duration, purchaser, Math.floor(Date.now() / 1000 + offer.duration))
       })
 
       it('should have purchase service', async () => {
         assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser }), true)
         assert.equal(await marketplace.getServicePurchasesCount(sidHex), 1)
         const purchase = await marketplace.getServicePurchaseWithIndex(sidHex, 0)
-        assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000), 0)
+        assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000 + offer.duration))
+        const purchaseIndex = await marketplace.getServicePurchaseIndexes(sidHex, purchaser)
+        assert.equal(purchaseIndex.serviceIndex, 0)
+        assert.equal(purchaseIndex.purchaseIndex, 0)
       })
 
       it('tokens should have been transferred from purchaser to developer', async () => {
@@ -372,24 +375,52 @@ contract('Marketplace', async ([
         assert.isTrue(developerBalance.eq(BN(offer.price)))
       })
 
+      it('should purchase a service again with second offer', async () => {
+        await token.approve(marketplace.address, offer2.price, { from: purchaser })
+        const tx = await marketplace.purchase(sidHex, 1, { from: purchaser })
+        assertEventServicePurchased(tx, 0, sid, 1, offer2.price, offer2.duration, purchaser, Math.floor(Date.now() / 1000 + offer.duration + offer2.duration))
+      })
+
+      it('should have purchase service again with second offer', async () => {
+        assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser }), true)
+        assert.equal(await marketplace.getServicePurchasesCount(sidHex), 1)
+        const purchase = await marketplace.getServicePurchaseWithIndex(sidHex, 0)
+        assertServicePurchase(purchase, purchaser, Math.floor(Date.now() / 1000 + offer.duration * offer2.duration))
+        const purchaseIndex = await marketplace.getServicePurchaseIndexes(sidHex, purchaser)
+        assert.equal(purchaseIndex.serviceIndex, 0)
+        assert.equal(purchaseIndex.purchaseIndex, 0)
+      })
+
+      it('tokens should have been transferred from purchaser to developer again with second offer', async () => {
+        const purchaserBalance = await token.balanceOf(purchaser)
+        const developerBalance = await token.balanceOf(developer)
+
+        assert.isTrue(purchaserBalance.eq(BN(purchaserInitialBalance).sub(BN(offer.price)).sub(BN(offer2.price))))
+        assert.isTrue(developerBalance.eq(BN(offer.price).add(BN(offer2.price))))
+      })
+
       it('should fail getting purchase count with non existing service', async () => {
         await truffleAssert.reverts(marketplace.getServicePurchasesCount(sidNotExistHex), errorServiceNotFound)
       })
 
-      it('should fail getting purchase with non existing service', async () => {
+      it('should fail getting purchase index with non existing service', async () => {
         await truffleAssert.reverts(marketplace.getServicePurchaseWithIndex(sidNotExistHex, 0), errorServiceNotFound)
       })
 
-      it('should fail getting purchase with non existing purchase', async () => {
+      it('should fail getting purchase index with non existing purchase', async () => {
         await truffleAssert.reverts(marketplace.getServicePurchaseWithIndex(sidHex, 10), errorPurchaseIndexOutOfBound)
+      })
+
+      it('should fail getting purchase indexes with non existing service', async () => {
+        await truffleAssert.reverts(marketplace.getServicePurchaseIndexes(sidNotExistHex, purchaser), errorServiceNotFound)
+      })
+
+      it('should fail getting purchase indexes with non existing purchaser', async () => {
+        await truffleAssert.reverts(marketplace.getServicePurchaseIndexes(sidHex, other), errorServicePurchaseNotFound)
       })
 
       it('should fail when marketplace is not allowed to spend on behalf of purchaser', async () => {
         await truffleAssert.reverts(marketplace.purchase(sidHex, 0, { from: purchaser2 }), errorServicePurchaseDidNotAllow)
-      })
-
-      it('should not be able to purchase twice the same service', async () => {
-        await truffleAssert.reverts(marketplace.purchase(sidHex, 0, { from: purchaser }), errorServicePurchaseAlreadyPurchase)
       })
 
       it('should not be able to purchase without enough balance', async () => {
@@ -404,10 +435,26 @@ contract('Marketplace', async ([
       it('purchase should be expired', async () => {
         await token.approve(marketplace.address, offer2.price, { from: purchaser2 })
         const tx = await marketplace.purchase(sidHex, 1, { from: purchaser2 })
-        assertEventServicePurchased(tx, 0, sid, 1, offer2.price, offer2.duration, purchaser2)
+        assertEventServicePurchased(tx, 0, sid, 1, offer2.price, offer2.duration, purchaser2, Math.floor(Date.now() / 1000 + offer2.duration))
         assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser2 }), true)
         await sleep(2 * 1000)
         assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser2 }), false)
+      })
+
+      it('should purchase a service with an expired purchase', async () => {
+        await token.approve(marketplace.address, offer2.price, { from: purchaser2 })
+        const tx = await marketplace.purchase(sidHex, 1, { from: purchaser2 })
+        assertEventServicePurchased(tx, 0, sid, 1, offer2.price, offer2.duration, purchaser2, Math.floor(Date.now() / 1000 + offer2.duration))
+      })
+
+      it('should have purchase service with an expired purchase', async () => {
+        assert.equal(await marketplace.hasPurchased(sidHex, { from: purchaser2 }), true)
+        assert.equal(await marketplace.getServicePurchasesCount(sidHex), 2)
+        const purchase = await marketplace.getServicePurchaseWithIndex(sidHex, 1)
+        assertServicePurchase(purchase, purchaser2, Math.floor(Date.now() / 1000 + offer2.duration))
+        const purchaseIndex = await marketplace.getServicePurchaseIndexes(sidHex, purchaser2)
+        assert.equal(purchaseIndex.serviceIndex, 0)
+        assert.equal(purchaseIndex.purchaseIndex, 1)
       })
 
       it('hasPurchase should fail when service doesn\'t exist', async () => {
