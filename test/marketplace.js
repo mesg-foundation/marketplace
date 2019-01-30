@@ -3,7 +3,7 @@
 
 const assert = require('chai').assert
 const truffleAssert = require('truffle-assertions')
-const { newDefaultToken, BN, hexToAscii, asciiToHex, sleep } = require('./utils')
+const { newDefaultToken, BN, hexToAscii, asciiToHex, sleep, padRight64 } = require('./utils')
 
 const Marketplace = artifacts.require('Marketplace')
 const Token = artifacts.require('MESGToken')
@@ -51,7 +51,7 @@ const assertEventServiceVersionCreated = (tx, serviceIndex, sid, versionIndex, v
   const event = tx.logs[0].args
   assert.equal(hexToAscii(event.sid), sid)
   assert.isTrue(event.versionIndex.eq(BN(versionIndex)))
-  assert.equal(event.hash, versionHash)
+  assert.equal(event.hash, padRight64(versionHash))
   assert.equal(hexToAscii(event.metadata), versionMetadata)
 }
 const assertServiceVersion = (version, versionHash, versionMetadata) => {

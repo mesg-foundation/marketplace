@@ -18,6 +18,7 @@ module.exports = {
   tokenTestConfig,
   BN: x => new web3.utils.BN(x),
   hexToAscii: x => web3.utils.hexToAscii(x).replace(/\u0000/g, ''),
+  padRight64: x => web3.utils.padRight(x, 64),
   asciiToHex: x => web3.utils.asciiToHex(x),
   asciiToHex32: x => web3.utils.asciiToHex(x),
   sleep: ms => new Promise(resolve => setTimeout(resolve, ms))
