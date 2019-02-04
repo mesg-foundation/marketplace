@@ -8,7 +8,7 @@
     "indentation": ["error", 2],
     "lbrace": "off",
     "linebreak-style": ["error", "unix"],
-    "max-len": ["error", 120],
+    "max-len": ["error", 300],
     "no-constant": ["error"],
     "no-empty-blocks": "off",
     "quotes": ["error", "double"],
@@ -16,7 +16,7 @@
     "visibility-first": "error",
 
     "security/enforce-explicit-visibility": ["error"],
-    "security/no-block-members": ["warning"],
+    "security/no-block-members": ["warning", ["blockhash"]],
     "security/no-inline-assembly": ["warning"]
   }
 }
