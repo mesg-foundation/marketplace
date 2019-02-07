@@ -174,7 +174,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function createServiceVersion(bytes32 sid, bytes20 hash, bytes calldata metadata) external whenNotPaused onlyServiceOwner(sid) whenServiceHashNotExist(hash) {
-    require(!isBytesZero(metadata), 'Metadata cannot be empty');
+    require(!isBytesZero(metadata), "Metadata cannot be empty");
     services[sid].versions[hash].metadata = metadata;
     services[sid].versionsList.push(hash);
     hashToService[hash] = sid;
@@ -183,7 +183,7 @@ contract Marketplace is Ownable, Pausable {
 
   function createServiceOffer(bytes32 sid, uint price, uint duration) external whenNotPaused onlyServiceOwner(sid) whenServiceVersionNotEmpty(sid) returns (uint offerIndex) {
     require(price > 0, 'Price cannot be zero'); // TODO: should be able to create an offer for free
-    require(duration > 0, 'Duration cannot be zero');
+    require(duration > 0, "Duration cannot be zero");
     Offer[] storage offers = services[sid].offers;
     offers.push(Offer({
       price: price,
