@@ -280,9 +280,6 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should create service version', async () => {
       await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].metadata, { from: accounts[0] })
     })
-    it('should fail price is 0', async () => {
-      await truffleAssert.reverts(marketplace.createServiceOffer(sids[0], 0, offers[0].duration, { from: accounts[0] }))
-    })
     it('should fail duration is 0', async () => {
       await truffleAssert.reverts(marketplace.createServiceOffer(sids[0], offers[0].price, 0, { from: accounts[0] }))
     })

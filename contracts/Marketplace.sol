@@ -182,7 +182,6 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function createServiceOffer(bytes32 sid, uint price, uint duration) external whenNotPaused onlyServiceOwner(sid) whenServiceVersionNotEmpty(sid) returns (uint offerIndex) {
-    require(price > 0, 'Price cannot be zero'); // TODO: should be able to create an offer for free
     require(duration > 0, "Duration cannot be zero");
     Offer[] storage offers = services[sid].offers;
     offers.push(Offer({
