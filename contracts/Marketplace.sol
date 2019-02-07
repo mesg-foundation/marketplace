@@ -42,10 +42,10 @@ contract Marketplace is Ownable, Pausable {
 
   IERC20 public token;
 
-  mapping(bytes20 => bytes32) public hashToService; // version's hash => service's sid
-
   mapping(bytes32 => Service) public services; // service's sid => Service
   bytes32[] public servicesList;
+
+  mapping(bytes20 => bytes32) public hashToService; // version's hash => service's sid
 
   /**
     Constructor
@@ -254,6 +254,14 @@ contract Marketplace is Ownable, Pausable {
     return services[sid].versionsList.length;
   }
 
+  function getServicesVersionsList(bytes32 sid, uint versionIndex)
+    external view
+    whenServiceExist(sid)
+    returns (bytes20 hash)
+  {
+    return services[sid].versionsList[versionIndex];
+  }
+
   function getServicesVersion(bytes32 sid, bytes20 hash)
     external view
     whenServiceExist(sid)
@@ -285,6 +293,14 @@ contract Marketplace is Ownable, Pausable {
     returns (uint count)
   {
     return services[sid].purchasesList.length;
+  }
+
+  function getServicesPurchasesList(bytes32 sid, uint purchaseIndex)
+    external view
+    whenServiceExist(sid)
+    returns (address purchaser)
+  {
+    return services[sid].purchasesList[purchaseIndex];
   }
 
   function getServicesPurchases(bytes32 sid, address purchaser)
