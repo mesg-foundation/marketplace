@@ -8,7 +8,7 @@ contract Marketplace is Ownable, Pausable {
   struct Service {
     address owner;
 
-    mapping(bytes20 => Version) versions;
+    mapping(bytes20 => Version) versions; // version's hash => Version
     bytes20[] versionsList;
 
     Offer[] offers;
@@ -85,32 +85,32 @@ contract Marketplace is Ownable, Pausable {
   }
 
   modifier addressNotZero(address a) {
-    require(a != address(0), "Address is set to zero");
+    require(a != address(0), "Address cannot be set to zero");
     _;
   }
 
   modifier whenServiceExist(bytes32 sid) {
-    require(services[sid].owner != address(0), "Service with sid wasn't created");
+    require(services[sid].owner != address(0), "Service with this sid does not exist");
     _;
   }
 
   modifier whenServiceNotExist(bytes32 sid) {
-    require(services[sid].owner == address(0), "Service  with sid has been already created");
+    require(services[sid].owner == address(0), "Service with same sid already exists");
     _;
   }
 
   modifier onlyServiceOwner(bytes32 sid) {
-    require(services[sid].owner == msg.sender, "Service owner is not the same as the sender");
+    require(services[sid].owner == msg.sender, "Service owner is not the sender");
     _;
   }
 
   modifier notServiceOwner(bytes32 sid) {
-    require(services[sid].owner != msg.sender, "Service owner is the same as the sender");
+    require(services[sid].owner != msg.sender, "Service owner cannot be the sender");
     _;
   }
 
   modifier whenServiceHashNotExist(bytes20 hash) {
-    require(!hashes[hash], "Hash exist");
+    require(!hashes[hash], "Hash already exists");
     _;
   }
 
@@ -120,12 +120,12 @@ contract Marketplace is Ownable, Pausable {
   }
 
   modifier whenServiceOfferExist(bytes32 sid, uint offerIndex) {
-    require(offerIndex < services[sid].offers.length, "Sevice offer not exist");
+    require(offerIndex < services[sid].offers.length, "Service offer does not exist");
     _;
   }
 
   modifier whenServiceOfferActive(bytes32 sid, uint offerIndex) {
-    require(services[sid].offers[offerIndex].active, "Sevice offer not active");
+    require(services[sid].offers[offerIndex].active, "Service offer is not active");
     _;
   }
 
@@ -170,7 +170,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function createServiceVersion(bytes32 sid, bytes20 hash, bytes calldata metadata) external whenNotPaused onlyServiceOwner(sid) whenServiceHashNotExist(hash) {
-    require(!isBytesZero(metadata), 'metadata is empty');
+    require(!isBytesZero(metadata), 'Metadata cannot be empty');
     services[sid].versions[hash].metadata = metadata;
     services[sid].versionsList.push(hash);
     hashes[hash] = true;
@@ -178,8 +178,8 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function createServiceOffer(bytes32 sid, uint price, uint duration) external whenNotPaused onlyServiceOwner(sid) whenServiceVersionNotEmpty(sid) returns (uint offerIndex) {
-    require(price > 0, 'price is 0');
-    require(duration > 0, 'duration is 0');
+    require(price > 0, 'Price cannot be zero'); // TODO: should be able to create an offer for free
+    require(duration > 0, 'Duration cannot be zero');
     Offer[] storage offers = services[sid].offers;
     offers.push(Offer({
       price: price,
@@ -204,8 +204,8 @@ contract Marketplace is Ownable, Pausable {
     Offer storage offer = service.offers[offerIndex];
 
     // Check if offer is active, sender has enough balance and approved the transform
-    require(token.balanceOf(msg.sender) >= offer.price, "Sender doesn't have enough balance to pay this service");
-    require(token.allowance(msg.sender, address(this)) >= offer.price, "Sender didn't approve this contract to spend on his behalf. Execute approve function on the token contract");
+    require(token.balanceOf(msg.sender) >= offer.price, "Sender does not have enough balance to pay this service");
+    require(token.allowance(msg.sender, address(this)) >= offer.price, "Sender did not approve this contract to spend on his behalf. Execute approve function on the token contract");
 
     // Transfer the token from sender to service owner
     token.transferFrom(msg.sender, service.owner, offer.price);
