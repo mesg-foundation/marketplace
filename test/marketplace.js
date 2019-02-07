@@ -333,17 +333,17 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
   })
 
   describe('service purchase', async () => {
-    it('should not have any purchasers', async () => {
-      assert.equal(await marketplace.getServicesPurchasersListCount(sids[0]), 0)
+    it('should not have any purchases', async () => {
+      assert.equal(await marketplace.getServicesPurchasesListCount(sids[0]), 0)
     })
-    it('should fail get purchasers list count - service not exist', async () => {
-      await truffleAssert.reverts(marketplace.getServicesPurchasersListCount(sids[1]))
+    it('should fail get purchases list count - service not exist', async () => {
+      await truffleAssert.reverts(marketplace.getServicesPurchasesListCount(sids[1]))
     })
-    it('should fail get purchasers - service not exist', async () => {
-      await truffleAssert.reverts(marketplace.getServicesPurchasers(sids[1], accounts[0]))
+    it('should fail get purchases - service not exist', async () => {
+      await truffleAssert.reverts(marketplace.getServicesPurchases(sids[1], accounts[0]))
     })
-    it('should get purchasers return 0', async () => {
-      assert.equal(await marketplace.getServicesPurchasers(sids[0], accounts[0]), 0)
+    it('should get purchases return 0', async () => {
+      assert.equal(await marketplace.getServicesPurchases(sids[0], accounts[0]), 0)
     })
     it('should has purchased return true for service owner', async () => {
       assert.isTrue(await marketplace.hasPurchased(sids[0], { from: accounts[0] }))
@@ -375,7 +375,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const now = Date.now() / 1000
       await marketplace.purchase(sids[0], 0, { from: accounts[1] })
       assert.isTrue(await marketplace.hasPurchased(sids[0], { from: accounts[1] }))
-      const expire = await marketplace.getServicesPurchasers(sids[0], accounts[1])
+      const expire = await marketplace.getServicesPurchases(sids[0], accounts[1])
       assert.isTrue(now <= expire && expire <= now + offers[0].duration)
     })
     it('should purchased service expire', async () => {
@@ -394,7 +394,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should disable service offer', async () => {
       await marketplace.disableServiceOffer(sids[0], 0, { from: accounts[0] })
     })
-    it('should fail purchasers - service offer not active', async () => {
+    it('should fail purchase - service offer not active', async () => {
       await truffleAssert.reverts(marketplace.purchase(sids[1], accounts[0]))
     })
     it('should purchase service offer twice', async () => {
@@ -402,7 +402,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await marketplace.purchase(sids[0], 1, { from: accounts[1] })
       await marketplace.purchase(sids[0], 1, { from: accounts[1] })
       const now = Date.now() / 1000
-      const expire = await marketplace.getServicesPurchasers(sids[0], accounts[1])
+      const expire = await marketplace.getServicesPurchases(sids[0], accounts[1])
       assert.isTrue(now + offers[1].duration <= expire && expire <= now + 2 * offers[1].duration)
     })
     it('should transfer service', async () => {

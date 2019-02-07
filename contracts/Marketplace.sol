@@ -13,8 +13,12 @@ contract Marketplace is Ownable, Pausable {
 
     Offer[] offers;
 
-    mapping(address => uint) purchasers;
-    address[] purchasersList;
+    mapping(address => Purchase) purchases; // purchaser's address => Purchase
+    address[] purchasesList;
+  }
+
+  struct Purchase {
+    uint expire;
   }
 
   struct Version {
@@ -150,12 +154,12 @@ contract Marketplace is Ownable, Pausable {
     return (offer.price, offer.duration, offer.active);
   }
 
-  function getServicesPurchasersListCount(bytes32 sid) external view whenServiceExist(sid) returns (uint count) {
-    return services[sid].purchasersList.length;
+  function getServicesPurchasesListCount(bytes32 sid) external view whenServiceExist(sid) returns (uint count) {
+    return services[sid].purchasesList.length;
   }
 
-  function getServicesPurchasers(bytes32 sid, address purchase) external view whenServiceExist(sid) returns (uint expire) {
-    return services[sid].purchasers[purchase];
+  function getServicesPurchases(bytes32 sid, address purchaser) external view whenServiceExist(sid) returns (uint expire) {
+    return services[sid].purchases[purchaser].expire;
   }
 
   function createService(bytes32 sid) external whenNotPaused whenServiceNotExist(sid) {
@@ -196,7 +200,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function hasPurchased(bytes32 sid) external view returns (bool purchased) {
-    return services[sid].owner == msg.sender || services[sid].purchasers[msg.sender] >= now;
+    return services[sid].owner == msg.sender || services[sid].purchases[msg.sender].expire >= now;
   }
 
   function purchase(bytes32 sid, uint offerIndex) external whenNotPaused whenServiceExist(sid) notServiceOwner(sid) whenServiceOfferExist(sid, offerIndex) whenServiceOfferActive(sid, offerIndex) {
@@ -211,12 +215,12 @@ contract Marketplace is Ownable, Pausable {
     token.transferFrom(msg.sender, service.owner, offer.price);
 
     uint expire = now + offer.duration;
-    if (service.purchasers[msg.sender] > now) {
-      expire = service.purchasers[msg.sender] + offer.duration;
+    if (service.purchases[msg.sender].expire > now) {
+      expire = service.purchases[msg.sender].expire + offer.duration;
     }
 
-    service.purchasers[msg.sender] = expire;
-    service.purchasersList.push(msg.sender);
+    service.purchases[msg.sender].expire = expire;
+    service.purchasesList.push(msg.sender); // TODO: user can purchase multiple time
     emit ServicePurchased(sid, offerIndex, msg.sender, offer.price, offer.duration, expire);
   }
 }
