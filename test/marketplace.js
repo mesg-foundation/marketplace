@@ -174,6 +174,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.getServicesListCount(), 1)
       assert.equal(await marketplace.services(sids[0]), accounts[0])
     })
+    it('should fail when create with empty sid', async () => {
+      await truffleAssert.reverts(marketplace.createService(asciiToHex(''), { from: accounts[0] }))
+    })
     it('should fail when create with existing sids[0]', async () => {
       await truffleAssert.reverts(marketplace.createService(sids[0], { from: accounts[0] }))
     })

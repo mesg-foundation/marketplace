@@ -163,6 +163,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function createService(bytes32 sid) external whenNotPaused whenServiceNotExist(sid) {
+    require(sid != bytes32(0), "Sid cannot be empty");
     services[sid].owner = msg.sender;
     servicesList.push(sid);
     emit ServiceCreated(sid, msg.sender);
