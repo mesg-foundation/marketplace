@@ -150,7 +150,11 @@ contract Marketplace is Ownable, Pausable {
     Externals
    */
 
-  function createService(bytes32 sid) external whenNotPaused whenServiceNotExist(sid) {
+  function createService(bytes32 sid)
+    external
+    whenNotPaused
+    whenServiceNotExist(sid)
+  {
     require(sid != bytes32(0), "Sid cannot be empty");
     services[sid].owner = msg.sender;
     servicesList.push(sid);
@@ -242,7 +246,10 @@ contract Marketplace is Ownable, Pausable {
     External views
    */
 
-  function getServicesListCount() external view returns (uint count) {
+  function getServicesListCount()
+    external view
+    returns (uint count)
+  {
     return servicesList.length;
   }
 
@@ -311,7 +318,10 @@ contract Marketplace is Ownable, Pausable {
     return services[sid].purchases[purchaser].expire;
   }
 
-  function isAuthorized(bytes32 sid) external view returns (bool purchased) {
+  function isAuthorized(bytes32 sid)
+    external view
+    returns (bool authorized)
+  {
     return services[sid].owner == msg.sender ||
       services[sid].purchases[msg.sender].expire >= now;
   }
@@ -327,5 +337,4 @@ contract Marketplace is Ownable, Pausable {
     bytes memory zero = new bytes(b.length);
     return keccak256(b) == keccak256(zero);
   }
-
 }
