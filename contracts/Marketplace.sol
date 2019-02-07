@@ -219,8 +219,10 @@ contract Marketplace is Ownable, Pausable {
       expire = service.purchases[msg.sender].expire + offer.duration;
     }
 
+    if (service.purchases[msg.sender].expire == 0) {
+      service.purchasesList.push(msg.sender);
+    }
     service.purchases[msg.sender].expire = expire;
-    service.purchasesList.push(msg.sender); // TODO: user can purchase multiple time
     emit ServicePurchased(sid, offerIndex, msg.sender, offer.price, offer.duration, expire);
   }
 }
