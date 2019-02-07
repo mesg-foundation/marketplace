@@ -31,11 +31,11 @@ contract Marketplace is Ownable, Pausable {
     bool active;
   }
 
-  IERC20 private token;
+  IERC20 public token;
 
   mapping(bytes20 => bytes32) public hashToService; // version's hash => service's sid
 
-  mapping(bytes32 => Service) public services;
+  mapping(bytes32 => Service) public services; // service's sid => Service
   bytes32[] public servicesList;
 
   constructor(IERC20 _token) public {
