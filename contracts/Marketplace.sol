@@ -199,7 +199,7 @@ contract Marketplace is Ownable, Pausable {
     emit ServiceOfferDisabled(sid, offerIndex);
   }
 
-  function hasPurchased(bytes32 sid) external view returns (bool purchased) {
+  function isAuthorized(bytes32 sid) external view returns (bool purchased) {
     return services[sid].owner == msg.sender || services[sid].purchases[msg.sender].expire >= now;
   }
 

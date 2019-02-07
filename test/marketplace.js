@@ -346,10 +346,10 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.getServicesPurchases(sids[0], accounts[0]), 0)
     })
     it('should has purchased return true for service owner', async () => {
-      assert.isTrue(await marketplace.hasPurchased(sids[0], { from: accounts[0] }))
+      assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[0] }))
     })
     it('should has purchased return false', async () => {
-      assert.isFalse(await marketplace.hasPurchased(sids[0], { from: accounts[1] }))
+      assert.isFalse(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
     })
     it('should fail purchase - service not exist', async () => {
       await truffleAssert.reverts(marketplace.purchase(sids[1], 0, { from: accounts[0] }))
@@ -374,13 +374,13 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await token.approve(marketplace.address, offers[0].price, { from: accounts[1] })
       const now = Date.now() / 1000
       await marketplace.purchase(sids[0], 0, { from: accounts[1] })
-      assert.isTrue(await marketplace.hasPurchased(sids[0], { from: accounts[1] }))
+      assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
       const expire = await marketplace.getServicesPurchases(sids[0], accounts[1])
       assert.isTrue(now <= expire && expire <= now + offers[0].duration)
     })
     it('should purchased service expire', async () => {
       await sleep(offers[0].duration + 1)
-      assert.isFalse(await marketplace.hasPurchased(sids[0], { from: accounts[1] }))
+      assert.isFalse(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
     })
     it('should transfer token to service owner after purchase', async () => {
       assert.equal(await token.balanceOf(accounts[0]), offers[0].price)
@@ -389,7 +389,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should purchase service offer with 2nd account', async () => {
       await token.approve(marketplace.address, offers[0].price, { from: accounts[2] })
       await marketplace.purchase(sids[0], 0, { from: accounts[2] })
-      assert.isTrue(await marketplace.hasPurchased(sids[0], { from: accounts[2] }))
+      assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[2] }))
     })
     it('should disable service offer', async () => {
       await marketplace.disableServiceOffer(sids[0], 0, { from: accounts[0] })
@@ -409,7 +409,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })
     })
     it('should has purchased return true for new service owner', async () => {
-      assert.isTrue(await marketplace.hasPurchased(sids[0], { from: accounts[1] }))
+      assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
     })
   })
 })
