@@ -34,11 +34,11 @@ const versions = [
 
 const offers = [
   {
-    price: 1,
+    price: 1000,
     duration: 1
   },
   {
-    price: 2,
+    price: 2000,
     duration: 2
   }
 ]
@@ -108,7 +108,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(event.price, offers[0].price)
       assert.equal(event.duration, offers[0].duration)
       const expire = event.expire.toNumber()
-      assert.isTrue(now <= expire && expire <= now + offers[0].duration)
+      assert.isTrue(now <= expire && expire <= now + 1 + offers[0].duration)
     })
     it('ServiceOfferDisabled', async () => {
       const tx = await marketplace.disableServiceOffer(sids[0], 0, { from: accounts[0] })
@@ -377,7 +377,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.getServicesPurchasesListCount(sids[0]), 1)
       assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
       const expire = await marketplace.getServicesPurchases(sids[0], accounts[1])
-      assert.isTrue(now <= expire && expire <= now + offers[0].duration)
+      assert.isTrue(now <= expire && expire <= now + 1 + offers[0].duration)
     })
     it('should purchased service expire', async () => {
       await sleep(offers[0].duration + 1)
@@ -406,7 +406,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.getServicesPurchasesListCount(sids[0]), 2)
       const now = Date.now() / 1000
       const expire = await marketplace.getServicesPurchases(sids[0], accounts[1])
-      assert.isTrue(now + offers[1].duration <= expire && expire <= now + 2 * offers[1].duration)
+      assert.isTrue(now + offers[1].duration <= expire && expire <= now + 1 + 2 * offers[1].duration)
     })
     it('should transfer service', async () => {
       await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })
