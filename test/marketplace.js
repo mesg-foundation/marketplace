@@ -1,14 +1,13 @@
 /* eslint-env mocha */
 /* global contract, artifacts */
 const assert = require('chai').assert
-const web3 = require('web3')
 const { asciiToHex, padRight } = require('web3-utils')
 const truffleAssert = require('truffle-assertions')
 
 const Marketplace = artifacts.require('Marketplace')
 const Token = artifacts.require('MESGToken')
 
-// usefull shortcut and constant
+// useful shortcut and constant
 const padRight64 = x => padRight(x, 64)
 const sleep = sec => new Promise(resolve => setTimeout(resolve, sec * 1000))
 
@@ -22,7 +21,7 @@ const sids = [
   asciiToHex('test-service-1')
 ]
 
-const versions = [ 
+const versions = [
   {
     hash: '0x0000000000000000000000000000000000000001',
     metadata: asciiToHex('https://mesg.com/download/v1/core.tar')
@@ -36,11 +35,11 @@ const versions = [
 const offers = [
   {
     price: 1,
-    duration: 1,
+    duration: 1
   },
   {
     price: 2,
-    duration: 2,
+    duration: 2
   }
 ]
 
@@ -48,7 +47,7 @@ const initTokenBalance = 10e3
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
   })
 
@@ -67,7 +66,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
     await token.transfer(accounts[1], initTokenBalance, { from: owner })
   })
@@ -131,7 +130,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
     await marketplace.pause({ from: owner })
   })
@@ -160,12 +159,12 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
   })
 
   describe('service create', async () => {
-    it('should return 0x0 addres on getting service with non existing sids[0]', async () => {
+    it('should return 0x0 address on getting service with non existing sids[0]', async () => {
       assert.equal(await marketplace.services(sids[0]), 0)
     })
     it('should create service', async () => {
@@ -190,13 +189,13 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
     await marketplace.createService(sids[0], { from: accounts[0] })
   })
 
   describe('service ownership', async () => {
-    it('should fail when service dosen\'t exist', async () => {
+    it('should fail when service doesn\'t exist', async () => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(asciiToHex('-'), accounts[0], { from: accounts[0] }))
     })
     it('should fail when new owner address equals 0x0', async () => {
@@ -213,7 +212,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
     await marketplace.createService(sids[0], { from: accounts[0] })
   })
@@ -257,7 +256,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
     await marketplace.createService(sids[0], { from: accounts[0] })
   })
@@ -325,7 +324,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
 contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
-    token = await Token.new('MESG', 'MESG', 18, 25*10e6, { from: owner })
+    token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
     await marketplace.createService(sids[0], { from: accounts[0] })
     await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].metadata, { from: accounts[0] })

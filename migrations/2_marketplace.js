@@ -2,7 +2,7 @@
 
 const Marketplace = artifacts.require('Marketplace')
 const MESGToken = artifacts.require('MESGToken')
-const { asciiToHex } = require('../test/utils')
+const { asciiToHex } = require('web3-utils')
 
 module.exports = async (deployer, network) => {
   await deployer.deploy(MESGToken, 'MESG Token', 'MESG', 18, 250000000)
