@@ -33,7 +33,7 @@ contract Marketplace is Ownable, Pausable {
 
   IERC20 private token;
 
-  mapping(bytes20 => bool) private hashes;
+  mapping(bytes20 => bytes32) public hashToService; // version's hash => service's sid
 
   mapping(bytes32 => Service) public services;
   bytes32[] public servicesList;
@@ -114,7 +114,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   modifier whenServiceHashNotExist(bytes20 hash) {
-    require(!hashes[hash], "Hash already exists");
+    require(services[hashToService[hash]].owner == address(0), "Hash already exists");
     _;
   }
 
@@ -177,7 +177,7 @@ contract Marketplace is Ownable, Pausable {
     require(!isBytesZero(metadata), 'Metadata cannot be empty');
     services[sid].versions[hash].metadata = metadata;
     services[sid].versionsList.push(hash);
-    hashes[hash] = true;
+    hashToService[hash] = sid;
     emit ServiceVersionCreated(sid, hash, metadata);
   }
 
