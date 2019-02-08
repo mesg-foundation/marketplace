@@ -275,22 +275,22 @@ contract Marketplace is Ownable, Pausable {
     External views
    */
 
-  function getServicesListCount()
+  function servicesListLength()
     external view
-    returns (uint count)
+    returns (uint length)
   {
     return servicesList.length;
   }
 
-  function getServicesVersionsListCount(bytes32 sid)
+  function servicesVersionsListLength(bytes32 sid)
     external view
     whenServiceExist(sid)
-    returns (uint count)
+    returns (uint length)
   {
     return services[sid].versionsList.length;
   }
 
-  function getServicesVersionsList(bytes32 sid, uint versionIndex)
+  function servicesVersionsList(bytes32 sid, uint versionIndex)
     external view
     whenServiceExist(sid)
     returns (bytes32 hash)
@@ -298,7 +298,7 @@ contract Marketplace is Ownable, Pausable {
     return services[sid].versionsList[versionIndex];
   }
 
-  function getServicesVersion(bytes32 sid, bytes32 hash)
+  function servicesVersion(bytes32 sid, bytes32 hash)
     external view
     whenServiceExist(sid)
     returns (bytes memory manifest, bytes memory manifestType)
@@ -307,15 +307,15 @@ contract Marketplace is Ownable, Pausable {
     return (version.manifest, version.manifestType);
   }
 
-  function getServicesOffersCount(bytes32 sid)
+  function servicesOffersLength(bytes32 sid)
     external view
     whenServiceExist(sid)
-    returns (uint count)
+    returns (uint length)
   {
     return services[sid].offers.length;
   }
 
-  function getServicesOffer(bytes32 sid, uint offerIndex)
+  function servicesOffer(bytes32 sid, uint offerIndex)
     external view
     whenServiceExist(sid)
     returns (uint price, uint duration, bool active)
@@ -324,15 +324,15 @@ contract Marketplace is Ownable, Pausable {
     return (offer.price, offer.duration, offer.active);
   }
 
-  function getServicesPurchasesListCount(bytes32 sid)
+  function servicesPurchasesListLength(bytes32 sid)
     external view
     whenServiceExist(sid)
-    returns (uint count)
+    returns (uint length)
   {
     return services[sid].purchasesList.length;
   }
 
-  function getServicesPurchasesList(bytes32 sid, uint purchaseIndex)
+  function servicesPurchasesList(bytes32 sid, uint purchaseIndex)
     external view
     whenServiceExist(sid)
     returns (address purchaser)
@@ -340,7 +340,7 @@ contract Marketplace is Ownable, Pausable {
     return services[sid].purchasesList[purchaseIndex];
   }
 
-  function getServicesPurchases(bytes32 sid, address purchaser)
+  function servicesPurchases(bytes32 sid, address purchaser)
     external view
     whenServiceExist(sid)
     returns (uint expire)
