@@ -202,6 +202,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should fail when create with existing sids[0]', async () => {
       await truffleAssert.reverts(marketplace.createService(sids[0], { from: accounts[0] }), errors.whenServiceNotExist)
     })
+    it('should fail when sid is too long', async () => {
+      await truffleAssert.fails(marketplace.createService(asciiToHex('dwadwdaiawiawodawoiiwdihdawwhiodwihawhhdiwahidwoihwdad'), { from: accounts[0] }))
+    })
     it('should create 2nd service', async () => {
       await marketplace.createService(sids[1], { from: accounts[0] })
     })
@@ -248,6 +251,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('should fail not service owner', async () => {
       await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestType, { from: accounts[1] }), errors.onlyServiceOwner)
+    })
+    it('should fail hash is too long', async () => {
+      await truffleAssert.fails(marketplace.createServiceVersion(sids[0], '0x11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111', versions[0].manifest, versions[0].manifestType, { from: accounts[0] }))
     })
     it('should fail get version list count - service not exist', async () => {
       await truffleAssert.reverts(marketplace.servicesVersionsListLength(sids[1]), errors.whenServiceExist)
