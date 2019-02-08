@@ -27,7 +27,8 @@ contract Marketplace is Ownable, Pausable {
   }
 
   struct Version {
-    bytes metadata;
+    bytes manifest;
+    bytes manifestType;
   }
 
   struct Offer {
@@ -73,7 +74,8 @@ contract Marketplace is Ownable, Pausable {
   event ServiceVersionCreated(
     bytes32 indexed sid,
     bytes32 indexed hash,
-    bytes metadata
+    bytes manifest,
+    bytes manifestType
   );
 
   event ServiceOfferCreated(
@@ -111,8 +113,13 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenMetadataNotEmpty(bytes memory metadata) {
-    require(!isBytesZero(metadata), "Metadata cannot be empty");
+  modifier whenManifestNotEmpty(bytes memory manifest) {
+    require(!isBytesZero(manifest), "Manifest cannot be empty");
+    _;
+  }
+
+  modifier whenManifestTypeNotEmpty(bytes memory manifestType) {
+    require(!isBytesZero(manifestType), "Manifest type cannot be empty");
     _;
   }
 
@@ -186,17 +193,24 @@ contract Marketplace is Ownable, Pausable {
     services[sid].owner = newOwner;
   }
 
-  function createServiceVersion(bytes32 sid, bytes32 hash, bytes calldata metadata)
+  function createServiceVersion(
+    bytes32 sid,
+    bytes32 hash,
+    bytes calldata manifest,
+    bytes calldata manifestType
+  )
     external
     whenNotPaused
     onlyServiceOwner(sid)
     whenServiceHashNotExist(hash)
-    whenMetadataNotEmpty(metadata)
+    whenManifestNotEmpty(manifest)
+    whenManifestTypeNotEmpty(manifestType)
   {
-    services[sid].versions[hash].metadata = metadata;
+    services[sid].versions[hash].manifest = manifest;
+    services[sid].versions[hash].manifestType = manifestType;
     services[sid].versionsList.push(hash);
     hashToService[hash] = sid;
-    emit ServiceVersionCreated(sid, hash, metadata);
+    emit ServiceVersionCreated(sid, hash, manifest, manifestType);
   }
 
   function createServiceOffer(bytes32 sid, uint price, uint duration)
@@ -287,9 +301,10 @@ contract Marketplace is Ownable, Pausable {
   function getServicesVersion(bytes32 sid, bytes32 hash)
     external view
     whenServiceExist(sid)
-    returns (bytes memory metadata)
+    returns (bytes memory manifest, bytes memory manifestType)
   {
-    return services[sid].versions[hash].metadata;
+    Version storage version = services[sid].versions[hash];
+    return (version.manifest, version.manifestType);
   }
 
   function getServicesOffersCount(bytes32 sid)
