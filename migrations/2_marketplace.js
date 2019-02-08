@@ -5,8 +5,18 @@ const MESGToken = artifacts.require('MESGToken')
 const { asciiToHex } = require('web3-utils')
 
 module.exports = async (deployer, network) => {
-  await deployer.deploy(MESGToken, 'MESG Token', 'MESG', 18, 250000000)
-  await deployer.deploy(Marketplace, MESGToken.address)
+  switch (network) {
+    case 'mainnet':
+      break
+    case 'ropsten':
+      await deployer.deploy(Marketplace, process.env.MESG_MARKETPLACE_ROPSTEN_TOKEN_ADDRESS)
+      break
+    case 'kovan':
+      break
+    default:
+      await deployer.deploy(MESGToken, 'MESG Token', 'MESG', 18, 250000000)
+      await deployer.deploy(Marketplace, MESGToken.address)
+  }
 
   if (network === 'staging') {
     const marketplace = await Marketplace.deployed()

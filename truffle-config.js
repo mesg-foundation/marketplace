@@ -23,8 +23,8 @@
  */
 
 const HDWalletProvider = require('truffle-hdwallet-provider')
-const infuraKey = process.env.MESG_TOKEN_INFURA_KEY
-const privateKey = process.env.MESG_TOKEN_NICOLAS_CREATOR_PK
+const infuraKey = process.env.MESG_MARKETPLACE_INFURA_KEY
+const privateKey = process.env.MESG_MARKETPLACE_CREATOR_PK
 
 //
 // const fs = require('fs');
