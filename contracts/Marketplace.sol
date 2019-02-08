@@ -28,7 +28,7 @@ contract Marketplace is Ownable, Pausable {
 
   struct Version {
     bytes manifest;
-    bytes manifestType;
+    bytes manifestProtocol;
   }
 
   struct Offer {
@@ -75,7 +75,7 @@ contract Marketplace is Ownable, Pausable {
     bytes32 indexed sid,
     bytes32 indexed hash,
     bytes manifest,
-    bytes manifestType
+    bytes manifestProtocol
   );
 
   event ServiceOfferCreated(
@@ -118,8 +118,8 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenManifestTypeNotEmpty(bytes memory manifestType) {
-    require(!isBytesZero(manifestType), "Manifest type cannot be empty");
+  modifier whenManifestProtocolNotEmpty(bytes memory manifestProtocol) {
+    require(!isBytesZero(manifestProtocol), "Manifest protocol cannot be empty");
     _;
   }
 
@@ -197,20 +197,20 @@ contract Marketplace is Ownable, Pausable {
     bytes32 sid,
     bytes32 hash,
     bytes calldata manifest,
-    bytes calldata manifestType
+    bytes calldata manifestProtocol
   )
     external
     whenNotPaused
     onlyServiceOwner(sid)
     whenServiceHashNotExist(hash)
     whenManifestNotEmpty(manifest)
-    whenManifestTypeNotEmpty(manifestType)
+    whenManifestProtocolNotEmpty(manifestProtocol)
   {
     services[sid].versions[hash].manifest = manifest;
-    services[sid].versions[hash].manifestType = manifestType;
+    services[sid].versions[hash].manifestProtocol = manifestProtocol;
     services[sid].versionsList.push(hash);
     hashToService[hash] = sid;
-    emit ServiceVersionCreated(sid, hash, manifest, manifestType);
+    emit ServiceVersionCreated(sid, hash, manifest, manifestProtocol);
   }
 
   function createServiceOffer(bytes32 sid, uint price, uint duration)
@@ -301,10 +301,10 @@ contract Marketplace is Ownable, Pausable {
   function servicesVersion(bytes32 sid, bytes32 hash)
     external view
     whenServiceExist(sid)
-    returns (bytes memory manifest, bytes memory manifestType)
+    returns (bytes memory manifest, bytes memory manifestProtocol)
   {
     Version storage version = services[sid].versions[hash];
-    return (version.manifest, version.manifestType);
+    return (version.manifest, version.manifestProtocol);
   }
 
   function servicesOffersLength(bytes32 sid)
