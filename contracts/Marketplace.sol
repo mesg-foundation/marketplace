@@ -101,8 +101,23 @@ contract Marketplace is Ownable, Pausable {
     Modifiers
    */
 
-  modifier addressNotZero(address a) {
+  modifier whenAddressNotZero(address a) {
     require(a != address(0), "Address cannot be set to zero");
+    _;
+  }
+
+  modifier whenSidNotEmpty(bytes32 sid) {
+    require(sid != bytes32(0), "Sid cannot be empty");
+    _;
+  }
+
+  modifier whenMetadataNotEmpty(bytes memory metadata) {
+    require(!isBytesZero(metadata), "Metadata cannot be empty");
+    _;
+  }
+
+  modifier whenDurationNotZero(uint duration) {
+    require(duration > 0, "Duration cannot be zero");
     _;
   }
 
@@ -153,9 +168,9 @@ contract Marketplace is Ownable, Pausable {
   function createService(bytes32 sid)
     external
     whenNotPaused
+    whenSidNotEmpty(sid)
     whenServiceNotExist(sid)
   {
-    require(sid != bytes32(0), "Sid cannot be empty");
     services[sid].owner = msg.sender;
     servicesList.push(sid);
     emit ServiceCreated(sid, msg.sender);
@@ -165,7 +180,7 @@ contract Marketplace is Ownable, Pausable {
     external
     whenNotPaused
     onlyServiceOwner(sid)
-    addressNotZero(newOwner)
+    whenAddressNotZero(newOwner)
   {
     emit ServiceOwnershipTransferred(sid, services[sid].owner, newOwner);
     services[sid].owner = newOwner;
@@ -176,8 +191,8 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
     whenServiceHashNotExist(hash)
+    whenMetadataNotEmpty(metadata)
   {
-    require(!isBytesZero(metadata), "Metadata cannot be empty");
     services[sid].versions[hash].metadata = metadata;
     services[sid].versionsList.push(hash);
     hashToService[hash] = sid;
@@ -189,9 +204,9 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     onlyServiceOwner(sid)
     whenServiceVersionNotEmpty(sid)
+    whenDurationNotZero(duration)
     returns (uint offerIndex)
   {
-    require(duration > 0, "Duration cannot be zero");
     Offer[] storage offers = services[sid].offers;
     offers.push(Offer({
       price: price,
