@@ -13,8 +13,8 @@ contract Marketplace is Ownable, Pausable {
   struct Service {
     address owner;
 
-    mapping(bytes20 => Version) versions; // version's hash => Version
-    bytes20[] versionsList;
+    mapping(bytes32 => Version) versions; // version's hash => Version
+    bytes32[] versionsList;
 
     Offer[] offers;
 
@@ -45,7 +45,7 @@ contract Marketplace is Ownable, Pausable {
   mapping(bytes32 => Service) public services; // service's sid => Service
   bytes32[] public servicesList;
 
-  mapping(bytes20 => bytes32) public hashToService; // version's hash => service's sid
+  mapping(bytes32 => bytes32) public hashToService; // version's hash => service's sid
 
   /**
     Constructor
@@ -72,7 +72,7 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceVersionCreated(
     bytes32 indexed sid,
-    bytes20 indexed hash,
+    bytes32 indexed hash,
     bytes metadata
   );
 
@@ -141,7 +141,7 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceHashNotExist(bytes20 hash) {
+  modifier whenServiceHashNotExist(bytes32 hash) {
     require(services[hashToService[hash]].owner == address(0), "Hash already exists");
     _;
   }
@@ -186,7 +186,7 @@ contract Marketplace is Ownable, Pausable {
     services[sid].owner = newOwner;
   }
 
-  function createServiceVersion(bytes32 sid, bytes20 hash, bytes calldata metadata)
+  function createServiceVersion(bytes32 sid, bytes32 hash, bytes calldata metadata)
     external
     whenNotPaused
     onlyServiceOwner(sid)
@@ -279,12 +279,12 @@ contract Marketplace is Ownable, Pausable {
   function getServicesVersionsList(bytes32 sid, uint versionIndex)
     external view
     whenServiceExist(sid)
-    returns (bytes20 hash)
+    returns (bytes32 hash)
   {
     return services[sid].versionsList[versionIndex];
   }
 
-  function getServicesVersion(bytes32 sid, bytes20 hash)
+  function getServicesVersion(bytes32 sid, bytes32 hash)
     external view
     whenServiceExist(sid)
     returns (bytes memory metadata)
