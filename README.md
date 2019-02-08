@@ -30,3 +30,9 @@ npm run typescript
 ```
 npm run coverage
 ```
+
+## Deploy on Ropsten
+
+```
+source .envrc; npm run migrate -- --network=ropsten
+```
