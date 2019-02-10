@@ -6,3 +6,4 @@ coverage
 coverage.json
 comparison
 deployment
+test-data
