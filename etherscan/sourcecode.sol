@@ -218,8 +218,8 @@ contract Marketplace is Ownable, Pausable {
   struct Service {
     address owner;
 
-    mapping(bytes20 => Version) versions; // version's hash => Version
-    bytes20[] versionsList;
+    mapping(bytes32 => Version) versions; // version's hash => Version
+    bytes32[] versionsList;
 
     Offer[] offers;
 
@@ -232,7 +232,8 @@ contract Marketplace is Ownable, Pausable {
   }
 
   struct Version {
-    bytes metadata;
+    bytes manifest;
+    bytes manifestProtocol;
   }
 
   struct Offer {
@@ -250,7 +251,7 @@ contract Marketplace is Ownable, Pausable {
   mapping(bytes32 => Service) public services; // service's sid => Service
   bytes32[] public servicesList;
 
-  mapping(bytes20 => bytes32) public hashToService; // version's hash => service's sid
+  mapping(bytes32 => bytes32) public hashToService; // version's hash => service's sid
 
   /**
     Constructor
@@ -277,8 +278,9 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceVersionCreated(
     bytes32 indexed sid,
-    bytes20 indexed hash,
-    bytes metadata
+    bytes32 indexed hash,
+    bytes manifest,
+    bytes manifestProtocol
   );
 
   event ServiceOfferCreated(
@@ -316,8 +318,13 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenMetadataNotEmpty(bytes memory metadata) {
-    require(!isBytesZero(metadata), "Metadata cannot be empty");
+  modifier whenManifestNotEmpty(bytes memory manifest) {
+    require(!isBytesZero(manifest), "Manifest cannot be empty");
+    _;
+  }
+
+  modifier whenManifestProtocolNotEmpty(bytes memory manifestProtocol) {
+    require(!isBytesZero(manifestProtocol), "Manifest protocol cannot be empty");
     _;
   }
 
@@ -346,7 +353,7 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceHashNotExist(bytes20 hash) {
+  modifier whenServiceHashNotExist(bytes32 hash) {
     require(services[hashToService[hash]].owner == address(0), "Hash already exists");
     _;
   }
@@ -391,17 +398,24 @@ contract Marketplace is Ownable, Pausable {
     services[sid].owner = newOwner;
   }
 
-  function createServiceVersion(bytes32 sid, bytes20 hash, bytes calldata metadata)
+  function createServiceVersion(
+    bytes32 sid,
+    bytes32 hash,
+    bytes calldata manifest,
+    bytes calldata manifestProtocol
+  )
     external
     whenNotPaused
     onlyServiceOwner(sid)
     whenServiceHashNotExist(hash)
-    whenMetadataNotEmpty(metadata)
+    whenManifestNotEmpty(manifest)
+    whenManifestProtocolNotEmpty(manifestProtocol)
   {
-    services[sid].versions[hash].metadata = metadata;
+    services[sid].versions[hash].manifest = manifest;
+    services[sid].versions[hash].manifestProtocol = manifestProtocol;
     services[sid].versionsList.push(hash);
     hashToService[hash] = sid;
-    emit ServiceVersionCreated(sid, hash, metadata);
+    emit ServiceVersionCreated(sid, hash, manifest, manifestProtocol);
   }
 
   function createServiceOffer(bytes32 sid, uint price, uint duration)
@@ -466,46 +480,47 @@ contract Marketplace is Ownable, Pausable {
     External views
    */
 
-  function getServicesListCount()
+  function servicesListLength()
     external view
-    returns (uint count)
+    returns (uint length)
   {
     return servicesList.length;
   }
 
-  function getServicesVersionsListCount(bytes32 sid)
+  function servicesVersionsListLength(bytes32 sid)
     external view
     whenServiceExist(sid)
-    returns (uint count)
+    returns (uint length)
   {
     return services[sid].versionsList.length;
   }
 
-  function getServicesVersionsList(bytes32 sid, uint versionIndex)
+  function servicesVersionsList(bytes32 sid, uint versionIndex)
     external view
     whenServiceExist(sid)
-    returns (bytes20 hash)
+    returns (bytes32 hash)
   {
     return services[sid].versionsList[versionIndex];
   }
 
-  function getServicesVersion(bytes32 sid, bytes20 hash)
+  function servicesVersion(bytes32 sid, bytes32 hash)
     external view
     whenServiceExist(sid)
-    returns (bytes memory metadata)
+    returns (bytes memory manifest, bytes memory manifestProtocol)
   {
-    return services[sid].versions[hash].metadata;
+    Version storage version = services[sid].versions[hash];
+    return (version.manifest, version.manifestProtocol);
   }
 
-  function getServicesOffersCount(bytes32 sid)
+  function servicesOffersLength(bytes32 sid)
     external view
     whenServiceExist(sid)
-    returns (uint count)
+    returns (uint length)
   {
     return services[sid].offers.length;
   }
 
-  function getServicesOffer(bytes32 sid, uint offerIndex)
+  function servicesOffer(bytes32 sid, uint offerIndex)
     external view
     whenServiceExist(sid)
     returns (uint price, uint duration, bool active)
@@ -514,15 +529,15 @@ contract Marketplace is Ownable, Pausable {
     return (offer.price, offer.duration, offer.active);
   }
 
-  function getServicesPurchasesListCount(bytes32 sid)
+  function servicesPurchasesListLength(bytes32 sid)
     external view
     whenServiceExist(sid)
-    returns (uint count)
+    returns (uint length)
   {
     return services[sid].purchasesList.length;
   }
 
-  function getServicesPurchasesList(bytes32 sid, uint purchaseIndex)
+  function servicesPurchasesList(bytes32 sid, uint purchaseIndex)
     external view
     whenServiceExist(sid)
     returns (address purchaser)
@@ -530,7 +545,7 @@ contract Marketplace is Ownable, Pausable {
     return services[sid].purchasesList[purchaseIndex];
   }
 
-  function getServicesPurchases(bytes32 sid, address purchaser)
+  function servicesPurchases(bytes32 sid, address purchaser)
     external view
     whenServiceExist(sid)
     returns (uint expire)
