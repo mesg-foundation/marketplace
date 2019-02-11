@@ -3,8 +3,10 @@ pragma solidity >=0.5.0 <0.6.0;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "./DnsUtils.sol";
 
 contract Marketplace is Ownable, Pausable {
+  using DnsUtils for bytes;
 
   /**
     Structures
@@ -41,7 +43,8 @@ contract Marketplace is Ownable, Pausable {
     Constant
    */
 
-  uint256 constant INFINITY = ~uint256(0);
+  uint constant INFINITY = ~uint256(0);
+  uint constant MAX_SID_LENGTH = 63;
 
 
   /**
@@ -115,11 +118,6 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenSidNotEmpty(bytes32 sid) {
-    require(sid != bytes32(0), "Sid cannot be empty");
-    _;
-  }
-
   modifier whenManifestNotEmpty(bytes memory manifest) {
     require(!isBytesZero(manifest), "Manifest cannot be empty");
     _;
@@ -137,11 +135,6 @@ contract Marketplace is Ownable, Pausable {
 
   modifier whenServiceExist(bytes32 sid) {
     require(services[sid].owner != address(0), "Service with this sid does not exist");
-    _;
-  }
-
-  modifier whenServiceNotExist(bytes32 sid) {
-    require(services[sid].owner == address(0), "Service with same sid already exists");
     _;
   }
 
@@ -179,15 +172,18 @@ contract Marketplace is Ownable, Pausable {
     Externals
    */
 
-  function createService(bytes32 sid)
+  function createService(bytes calldata sid)
     external
     whenNotPaused
-    whenSidNotEmpty(sid)
-    whenServiceNotExist(sid)
   {
-    services[sid].owner = msg.sender;
-    servicesList.push(sid);
-    emit ServiceCreated(sid, msg.sender);
+    require(sid.length > 0, "Sid cannot be empty");
+    require(sid.length <= MAX_SID_LENGTH, "Sid cannot exceed 63 chars");
+    // require(sid.isDomainName(), "Sid format invalid");
+    bytes32 id = keccak256(sid);
+    require(services[id].owner == address(0), "Service with same sid already exists");
+    services[id].owner = msg.sender;
+    servicesList.push(id);
+    emit ServiceCreated(id, msg.sender);
   }
 
   function transferServiceOwnership(bytes32 sid, address newOwner)

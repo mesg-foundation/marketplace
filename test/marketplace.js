@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 /* global contract, artifacts */
 const assert = require('chai').assert
-const { asciiToHex, padRight, toBN } = require('web3-utils')
+const { asciiToHex, padRight, toBN, sha3 } = require('web3-utils')
 const truffleAssert = require('truffle-assertions')
 
 const Marketplace = artifacts.require('Marketplace')
@@ -30,6 +30,7 @@ const errors = {
   whenServiceOfferExist: 'Service offer does not exist',
   whenServiceOfferActive: 'Service offer is not active',
   whenSidNotEmpty: 'Sid cannot be empty',
+  whenSidTooLong: 'Sid cannot exceed 63 chars',
   whenManifestNotEmpty: 'Manifest cannot be empty',
   whenManifestProtocolNotEmpty: 'Manifest protocol cannot be empty',
   whenDurationNotZero: 'Duration cannot be zero',
@@ -38,9 +39,14 @@ const errors = {
 }
 
 // constants used for creating services, versions and offers
-const sids = [
+const sidNames = [
   asciiToHex('test-service-0'),
   asciiToHex('test-service-1')
+]
+
+const sids = [
+  sha3('test-service-0'),
+  sha3('test-service-1')
 ]
 
 const versions = [
@@ -101,7 +107,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
   describe('emit event', async () => {
     it('ServiceCreated', async () => {
-      const tx = await marketplace.createService(sids[0], { from: accounts[0] })
+      const tx = await marketplace.createService(sidNames[0], { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceCreated')
       const event = tx.logs[0].args
       assert.equal(event.sid, padRight64(sids[0]))
@@ -165,7 +171,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
   describe('set pause', async () => {
     it('createService', async () => {
-      await truffleAssert.reverts(marketplace.createService(sids[0], { from: accounts[0] }))
+      await truffleAssert.reverts(marketplace.createService(sidNames[0], { from: accounts[0] }))
     })
     it('transferServiceOwnership', async () => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] }))
@@ -196,31 +202,37 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.services(sids[0]), 0)
     })
     it('should create service', async () => {
-      await marketplace.createService(sids[0], { from: accounts[0] })
+      await marketplace.createService(sidNames[0], { from: accounts[0] })
     })
     it('should have one service', async () => {
       assert.equal(await marketplace.servicesListLength(), 1)
       assert.equal(await marketplace.services(sids[0]), accounts[0])
     })
     it('should fail when create with empty sid', async () => {
-      await truffleAssert.reverts(marketplace.createService(asciiToHex(''), { from: accounts[0] }), errors.whenSidNotEmpty)
+      await truffleAssert.reverts(marketplace.createService('0x', { from: accounts[0] }), errors.whenSidNotEmpty)
     })
     it('should fail when create with existing sids[0]', async () => {
-      await truffleAssert.reverts(marketplace.createService(sids[0], { from: accounts[0] }), errors.whenServiceNotExist)
+      await truffleAssert.reverts(marketplace.createService(sidNames[0], { from: accounts[0] }), errors.whenServiceNotExist)
     })
     it('should fail when sid is too long', async () => {
-      await truffleAssert.fails(marketplace.createService(asciiToHex('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'), { from: accounts[0] }))
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('a'.repeat(64)), { from: accounts[0] }), errors.whenSidTooLong)
     })
     it('should create 2nd service', async () => {
-      await marketplace.createService(sids[1], { from: accounts[0] })
+      await marketplace.createService(sidNames[1], { from: accounts[0] })
     })
     it('should have two services', async () => {
       assert.equal(await marketplace.servicesListLength(), 2)
       assert.equal(await marketplace.services(sids[1]), accounts[0])
     })
-    it('should create service with all valid chars', async () => {
-      await marketplace.createService(asciiToHex('a.b-cdefghijklmnopqrstuvwxyz'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('1234567890'), { from:accounts[0] })
+    it('should create service with valid names', async () => {
+      await marketplace.createService(asciiToHex('abcdefghijklmnopqrstuvwxyz'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('_1234567890'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('service'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('service.mesg'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('service-0.mesg'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('_service.mesg'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('1-service.mesg'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('core.service.mesg'), { from:accounts[0] })
     })
   })
 })
@@ -229,7 +241,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
     token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
-    await marketplace.createService(sids[0], { from: accounts[0] })
+    await marketplace.createService(sidNames[0], { from: accounts[0] })
   })
 
   describe('service ownership', async () => {
@@ -252,7 +264,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
     token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
-    await marketplace.createService(sids[0], { from: accounts[0] })
+    await marketplace.createService(sidNames[0], { from: accounts[0] })
   })
 
   describe('service versions', async () => {
@@ -312,7 +324,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
     token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
-    await marketplace.createService(sids[0], { from: accounts[0] })
+    await marketplace.createService(sidNames[0], { from: accounts[0] })
   })
 
   describe('service offers', async () => {
@@ -380,7 +392,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
   before(async () => {
     token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
-    await marketplace.createService(sids[0], { from: accounts[0] })
+    await marketplace.createService(sidNames[0], { from: accounts[0] })
     await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
     await marketplace.createServiceOffer(sids[0], offers[0].price, offers[0].duration, { from: accounts[0] })
     await marketplace.createServiceOffer(sids[0], offers[1].price, offers[1].duration, { from: accounts[0] })
