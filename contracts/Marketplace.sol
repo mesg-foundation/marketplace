@@ -38,6 +38,13 @@ contract Marketplace is Ownable, Pausable {
   }
 
   /**
+    Constant
+   */
+
+  uint256 constant INFINITY = ~uint256(0);
+
+
+  /**
     State variables
    */
 
@@ -252,6 +259,11 @@ contract Marketplace is Ownable, Pausable {
     Service storage service = services[sid];
     Offer storage offer = service.offers[offerIndex];
 
+    // if offer has been purchased for infinity then return
+    if (service.purchases[msg.sender].expire == INFINITY) {
+      return;
+    }
+
     // Check if offer is active, sender has enough balance and approved the transform
     require(token.balanceOf(msg.sender) >= offer.price, "Sender does not have enough balance to pay this service");
     require(token.allowance(msg.sender, address(this)) >= offer.price, "Sender did not approve this contract to spend on his behalf. Execute approve function on the token contract");
@@ -259,14 +271,21 @@ contract Marketplace is Ownable, Pausable {
     // Transfer the token from sender to service owner
     token.transferFrom(msg.sender, service.owner, offer.price);
 
-    uint expire = now + offer.duration;
-    if (service.purchases[msg.sender].expire > now) {
-      expire = service.purchases[msg.sender].expire + offer.duration;
-    }
+    // max(service.purchases[msg.sender].expire,  now)
+    uint expire = service.purchases[msg.sender].expire <= now ?
+                    now : service.purchases[msg.sender].expire;
 
+    // set expire + duration or INFINITY on overflow
+    expire = expire + offer.duration < expire ?
+               INFINITY : expire + offer.duration;
+
+    // if given address purchase service
+    // 1st time add it to purchases list
     if (service.purchases[msg.sender].expire == 0) {
       service.purchasesList.push(msg.sender);
     }
+
+    // set new expire time
     service.purchases[msg.sender].expire = expire;
     emit ServicePurchased(sid, offerIndex, msg.sender, offer.price, offer.duration, expire);
   }

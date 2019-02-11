@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 /* global contract, artifacts */
 const assert = require('chai').assert
-const { asciiToHex, padRight } = require('web3-utils')
+const { asciiToHex, padRight, toBN } = require('web3-utils')
 const truffleAssert = require('truffle-assertions')
 
 const Marketplace = artifacts.require('Marketplace')
@@ -10,6 +10,9 @@ const Token = artifacts.require('MESGToken')
 // useful shortcut and constant
 const padRight64 = x => padRight(x, 64)
 const sleep = sec => new Promise(resolve => setTimeout(resolve, sec * 1000))
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000'
+const INFINITY = toBN('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
 
 // contracts object
 let token = null
@@ -61,6 +64,10 @@ const offers = [
   {
     price: 2000,
     duration: 2
+  },
+  {
+    price: 3000,
+    duration: INFINITY
   }
 ]
 
@@ -230,7 +237,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(asciiToHex('-'), accounts[0], { from: accounts[0] }), errors.onlyServiceOwner)
     })
     it('should fail when new owner address equals 0x0', async () => {
-      await truffleAssert.reverts(marketplace.transferServiceOwnership(sids[0], '0x0000000000000000000000000000000000000000', { from: accounts[0] }), errors.whenAddressNotZero)
+      await truffleAssert.reverts(marketplace.transferServiceOwnership(sids[0], ZERO_ADDRESS, { from: accounts[0] }), errors.whenAddressNotZero)
     })
     it('should fail when called by not owner', async () => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[1] }), errors.onlyServiceOwner)
@@ -256,7 +263,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[1] }), errors.onlyServiceOwner)
     })
     it('should fail hash is too long', async () => {
-      await truffleAssert.fails(marketplace.createServiceVersion(sids[0], '0x00000000000000000000000000000000000000000000000000000000000000010', versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] }))
+      await truffleAssert.fails(marketplace.createServiceVersion(sids[0], ZERO_HASH + '1', versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] }))
     })
     it('should fail get version list count - service not exist', async () => {
       await truffleAssert.reverts(marketplace.servicesVersionsListLength(sids[1]), errors.whenServiceExist)
@@ -363,6 +370,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const offer = await marketplace.servicesOffer(sids[0], 0)
       assert.isFalse(offer.active)
     })
+    it('should create service offer with duration set to infinity', async () => {
+      await marketplace.createServiceOffer(sids[0], offers[2].price, offers[2].duration, { from: accounts[0] })
+    })
   })
 })
 
@@ -374,6 +384,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
     await marketplace.createServiceOffer(sids[0], offers[0].price, offers[0].duration, { from: accounts[0] })
     await marketplace.createServiceOffer(sids[0], offers[1].price, offers[1].duration, { from: accounts[0] })
+    await marketplace.createServiceOffer(sids[0], offers[2].price, offers[2].duration, { from: accounts[0] })
   })
 
   describe('service purchase', async () => {
@@ -460,6 +471,18 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
       const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
       assert.equal(expire, block.timestamp + 2 * offers[1].duration)
+    })
+    it('should purchase service with infinity offer', async () => {
+      await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
+      const tx = await marketplace.purchase(sids[0], 2, { from: accounts[1] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash);
+      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
+      assert.equal(expire.cmp(INFINITY), 0)
+    })
+    it('should purchase service with infinity expire not emit event', async () => {
+      await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
+      const tx = await marketplace.purchase(sids[0], 2, { from: accounts[1] })
+      truffleAssert.eventNotEmitted(tx, 'ServicePurchased')
     })
     it('should transfer service', async () => {
       await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })
