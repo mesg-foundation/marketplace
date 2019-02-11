@@ -3,9 +3,11 @@ pragma solidity >=0.5.0 <0.6.0;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "./BytesUtils.sol";
 import "./DnsUtils.sol";
 
 contract Marketplace is Ownable, Pausable {
+  using BytesUtils for bytes;
   using DnsUtils for bytes;
 
   /**
@@ -119,12 +121,12 @@ contract Marketplace is Ownable, Pausable {
   }
 
   modifier whenManifestNotEmpty(bytes memory manifest) {
-    require(!isBytesZero(manifest), "Manifest cannot be empty");
+    require(!manifest.isZero(), "Manifest cannot be empty");
     _;
   }
 
   modifier whenManifestProtocolNotEmpty(bytes memory manifestProtocol) {
-    require(!isBytesZero(manifestProtocol), "Manifest protocol cannot be empty");
+    require(!manifestProtocol.isZero(), "Manifest protocol cannot be empty");
     _;
   }
 
@@ -369,17 +371,5 @@ contract Marketplace is Ownable, Pausable {
   {
     return services[sid].owner == msg.sender ||
       services[sid].purchases[msg.sender].expire >= now;
-  }
-
-  /**
-    Internal pure
-   */
-
-  function isBytesZero(bytes memory b) internal pure returns (bool) {
-    if (b.length == 0) {
-      return true;
-    }
-    bytes memory zero = new bytes(b.length);
-    return keccak256(b) == keccak256(zero);
   }
 }
