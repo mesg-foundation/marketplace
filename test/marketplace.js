@@ -120,8 +120,8 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('ServicePurchased', async () => {
       await token.approve(marketplace.address, offers[0].price, { from: accounts[1] })
-      const now = Date.now() / 1000
       const tx = await marketplace.purchase(sids[0], 0, { from: accounts[1] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash);
       truffleAssert.eventEmitted(tx, 'ServicePurchased')
       const event = tx.logs[0].args
       assert.equal(event.sid, padRight64(sids[0]))
@@ -129,8 +129,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(event.purchaser, accounts[1])
       assert.equal(event.price, offers[0].price)
       assert.equal(event.duration, offers[0].duration)
-      const expire = event.expire.toNumber()
-      assert.isTrue(now <= expire && expire <= now + 1 + offers[0].duration)
+      assert.equal(event.expire, block.timestamp + offers[0].duration)
     })
     it('ServiceOfferDisabled', async () => {
       const tx = await marketplace.disableServiceOffer(sids[0], 0, { from: accounts[0] })
@@ -212,6 +211,10 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.servicesListLength(), 2)
       assert.equal(await marketplace.services(sids[1]), accounts[0])
     })
+    it('should create service with all valid chars', async () => {
+      await marketplace.createService(asciiToHex('a.b-cdefghijklmnopqrstuvwxyz'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('1234567890'), { from:accounts[0] })
+    })
   })
 })
 
@@ -268,9 +271,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, '0x00', versions[0].manifestProtocol, { from: accounts[0] }), errors.whenManifestNotEmpty)
       await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, '0x0000', versions[0].manifestProtocol, { from: accounts[0] }), errors.whenManifestNotEmpty)
     })
-    it('should fail manifest empty', async () => {
+    it('should fail manifest protocol empty', async () => {
       await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, '0x00', { from: accounts[0] }), errors.whenManifestProtocolNotEmpty)
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, '0x0000', { from: accounts[0] }), errors.whenManifestProtocolNotEmpty)
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, '0x00', { from: accounts[0] }), errors.whenManifestProtocolNotEmpty)
     })
     it('should create service version', async () => {
       await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
@@ -416,13 +419,15 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('should purchase service offer', async () => {
       await token.approve(marketplace.address, offers[0].price, { from: accounts[1] })
-      const now = Date.now() / 1000
-      await marketplace.purchase(sids[0], 0, { from: accounts[1] })
+      const tx = await marketplace.purchase(sids[0], 0, { from: accounts[1] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash);
+
       assert.equal(await marketplace.servicesPurchasesListLength(sids[0]), 1)
-      assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
-      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
-      assert.isTrue(now <= expire && expire <= now + 1 + offers[0].duration)
       assert.equal(await marketplace.servicesPurchasesList(sids[0], 0), accounts[1])
+      assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
+
+      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
+      assert.equal(expire, block.timestamp + offers[0].duration)
     })
     it('should purchased service expire', async () => {
       await sleep(offers[0].duration + 1)
@@ -446,13 +451,15 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('should purchase service offer twice', async () => {
       await token.approve(marketplace.address, 2 * offers[1].price, { from: accounts[1] })
+      const tx = await marketplace.purchase(sids[0], 1, { from: accounts[1] })
       await marketplace.purchase(sids[0], 1, { from: accounts[1] })
-      await marketplace.purchase(sids[0], 1, { from: accounts[1] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash);
+
       assert.equal(await marketplace.servicesPurchasesListLength(sids[0]), 2)
-      const now = Date.now() / 1000
-      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
-      assert.isTrue(now + offers[1].duration <= expire && expire <= now + 1 + 2 * offers[1].duration)
       assert.equal(await marketplace.servicesPurchasesList(sids[0], 0), accounts[1])
+
+      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
+      assert.equal(expire, block.timestamp + 2 * offers[1].duration)
     })
     it('should transfer service', async () => {
       await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })
