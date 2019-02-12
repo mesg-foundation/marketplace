@@ -24,6 +24,7 @@ const errors = {
   whenServiceExist: 'Service with this sid does not exist',
   whenServiceNotExist: 'Service with same sid already exists',
   onlyServiceOwner: 'Service owner is not the sender',
+  whenServicePurchased: 'Service has been already purchased',
   notServiceOwner: 'Service owner cannot be the sender',
   whenServiceHashNotExist: 'Hash already exists',
   whenServiceVersionNotEmpty: 'Cannot create an offer on a service without version',
@@ -495,10 +496,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const expire = await marketplace.servicesPurchase(sids[0], accounts[1])
       assert.equal(expire.cmp(INFINITY), 0)
     })
-    it('should purchase service with infinity expire not emit event', async () => {
+    it('should fail purchase service with infinity expire', async () => {
       await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
-      const tx = await marketplace.purchase(sids[0], 2, { from: accounts[1] })
-      truffleAssert.eventNotEmitted(tx, 'ServicePurchased')
+      const tx = await truffleAssert.reverts(marketplace.purchase(sids[0], 2, { from: accounts[1] }), errors.whenServicePurchased)
     })
     it('should transfer service', async () => {
       await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })

@@ -258,9 +258,7 @@ contract Marketplace is Ownable, Pausable {
     Offer storage offer = service.offers[offerIndex];
 
     // if offer has been purchased for infinity then return
-    if (service.purchases[msg.sender].expire == INFINITY) {
-      return;
-    }
+    require(service.purchases[msg.sender].expire != INFINITY, "Service has been already purchased");
 
     // Check if offer is active, sender has enough balance and approved the transform
     require(token.balanceOf(msg.sender) >= offer.price, "Sender does not have enough balance to pay this service");
