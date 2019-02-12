@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-/* global contract, artifacts */
+/* global contract, artifacts, web3 */
 const assert = require('chai').assert
 const { asciiToHex, padRight, toBN, sha3 } = require('web3-utils')
 const truffleAssert = require('truffle-assertions')
@@ -134,7 +134,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('ServicePurchased', async () => {
       await token.approve(marketplace.address, offers[0].price, { from: accounts[1] })
       const tx = await marketplace.purchase(sids[0], 0, { from: accounts[1] })
-      const block = await web3.eth.getBlock(tx.receipt.blockHash);
+      const block = await web3.eth.getBlock(tx.receipt.blockHash)
       truffleAssert.eventEmitted(tx, 'ServicePurchased')
       const event = tx.logs[0].args
       assert.equal(event.sid, padRight64(sids[0]))
@@ -225,14 +225,14 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.services(sids[1]), accounts[0])
     })
     it('should create service with valid names', async () => {
-      await marketplace.createService(asciiToHex('abcdefghijklmnopqrstuvwxyz'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('_1234567890'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('service'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('service.mesg'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('service-0.mesg'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('_service.mesg'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('1-service.mesg'), { from:accounts[0] })
-      await marketplace.createService(asciiToHex('core.service.mesg'), { from:accounts[0] })
+      await marketplace.createService(asciiToHex('abcdefghijklmnopqrstuvwxyz'), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('_1234567890'), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('service'), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('service.mesg'), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('service-0.mesg'), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('_service.mesg'), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('1-service.mesg'), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('core.service.mesg'), { from: accounts[0] })
     })
   })
 })
@@ -443,7 +443,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should purchase service offer', async () => {
       await token.approve(marketplace.address, offers[0].price, { from: accounts[1] })
       const tx = await marketplace.purchase(sids[0], 0, { from: accounts[1] })
-      const block = await web3.eth.getBlock(tx.receipt.blockHash);
+      const block = await web3.eth.getBlock(tx.receipt.blockHash)
 
       assert.equal(await marketplace.servicesPurchasesListLength(sids[0]), 1)
       assert.equal(await marketplace.servicesPurchasesList(sids[0], 0), accounts[1])
@@ -476,7 +476,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await token.approve(marketplace.address, 2 * offers[1].price, { from: accounts[1] })
       const tx = await marketplace.purchase(sids[0], 1, { from: accounts[1] })
       await marketplace.purchase(sids[0], 1, { from: accounts[1] })
-      const block = await web3.eth.getBlock(tx.receipt.blockHash);
+      const block = await web3.eth.getBlock(tx.receipt.blockHash)
 
       assert.equal(await marketplace.servicesPurchasesListLength(sids[0]), 2)
       assert.equal(await marketplace.servicesPurchasesList(sids[0], 0), accounts[1])
@@ -486,8 +486,6 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('should purchase service with infinity offer', async () => {
       await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
-      const tx = await marketplace.purchase(sids[0], 2, { from: accounts[1] })
-      const block = await web3.eth.getBlock(tx.receipt.blockHash);
       const expire = await marketplace.servicesPurchase(sids[0], accounts[1])
       assert.equal(expire.cmp(INFINITY), 0)
     })
