@@ -357,7 +357,7 @@ contract Marketplace is Ownable, Pausable {
     return services[sid].purchasesList[purchaseIndex];
   }
 
-  function servicesPurchases(bytes32 sid, address purchaser)
+  function servicesPurchase(bytes32 sid, address purchaser)
     external view
     whenServiceExist(sid)
     returns (uint expire)

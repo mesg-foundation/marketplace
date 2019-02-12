@@ -410,10 +410,10 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.servicesPurchasesList(sids[1], 0), errors.whenServiceExist)
     })
     it('should fail get purchases - service not exist', async () => {
-      await truffleAssert.reverts(marketplace.servicesPurchases(sids[1], accounts[0]), errors.whenServiceExist)
+      await truffleAssert.reverts(marketplace.servicesPurchase(sids[1], accounts[0]), errors.whenServiceExist)
     })
     it('should get purchases return 0', async () => {
-      assert.equal(await marketplace.servicesPurchases(sids[0], accounts[0]), 0)
+      assert.equal(await marketplace.servicesPurchase(sids[0], accounts[0]), 0)
     })
     it('should has purchased return true for service owner', async () => {
       assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[0] }))
@@ -449,7 +449,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.servicesPurchasesList(sids[0], 0), accounts[1])
       assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
 
-      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
+      const expire = await marketplace.servicesPurchase(sids[0], accounts[1])
       assert.equal(expire, block.timestamp + offers[0].duration)
     })
     it('should purchased service expire', async () => {
@@ -481,14 +481,14 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.servicesPurchasesListLength(sids[0]), 2)
       assert.equal(await marketplace.servicesPurchasesList(sids[0], 0), accounts[1])
 
-      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
+      const expire = await marketplace.servicesPurchase(sids[0], accounts[1])
       assert.equal(expire, block.timestamp + 2 * offers[1].duration)
     })
     it('should purchase service with infinity offer', async () => {
       await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
       const tx = await marketplace.purchase(sids[0], 2, { from: accounts[1] })
       const block = await web3.eth.getBlock(tx.receipt.blockHash);
-      const expire = await marketplace.servicesPurchases(sids[0], accounts[1])
+      const expire = await marketplace.servicesPurchase(sids[0], accounts[1])
       assert.equal(expire.cmp(INFINITY), 0)
     })
     it('should purchase service with infinity expire not emit event', async () => {
