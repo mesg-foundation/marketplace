@@ -486,6 +486,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('should purchase service with infinity offer', async () => {
       await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
+      await marketplace.purchase(sids[0], 2, { from: accounts[1] })
       const expire = await marketplace.servicesPurchase(sids[0], accounts[1])
       assert.equal(expire.cmp(INFINITY), 0)
     })
