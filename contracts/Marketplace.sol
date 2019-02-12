@@ -365,11 +365,18 @@ contract Marketplace is Ownable, Pausable {
     return services[sid].purchases[purchaser].expire;
   }
 
+  function isAuthorized(bytes32 sid, address purchaser)
+    public view
+    returns (bool authorized)
+  {
+    return services[sid].owner == purchaser ||
+      services[sid].purchases[purchaser].expire >= now;
+  }
+
   function isAuthorized(bytes32 sid)
     external view
     returns (bool authorized)
   {
-    return services[sid].owner == msg.sender ||
-      services[sid].purchases[msg.sender].expire >= now;
+    return isAuthorized(sid, msg.sender);
   }
 }
