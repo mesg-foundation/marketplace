@@ -30,6 +30,7 @@ const errors = {
   whenServiceOfferExist: 'Service offer does not exist',
   whenServiceOfferActive: 'Service offer is not active',
   whenSidNotEmpty: 'Sid cannot be empty',
+  whenSidNotValid: 'Sid format invalid',
   whenSidTooLong: 'Sid cannot exceed 63 chars',
   whenManifestNotEmpty: 'Manifest cannot be empty',
   whenManifestProtocolNotEmpty: 'Manifest protocol cannot be empty',
@@ -233,6 +234,10 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await marketplace.createService(asciiToHex('_service.mesg'), { from: accounts[0] })
       await marketplace.createService(asciiToHex('1-service.mesg'), { from: accounts[0] })
       await marketplace.createService(asciiToHex('core.service.mesg'), { from: accounts[0] })
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('-service'), { from: accounts[0] }), errors.whenSidNotValid)
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('service-'), { from: accounts[0] }), errors.whenSidNotValid)
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('.service'), { from: accounts[0] }), errors.whenSidNotValid)
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('s..ervice'), { from: accounts[0] }), errors.whenSidNotValid)
     })
   })
 })

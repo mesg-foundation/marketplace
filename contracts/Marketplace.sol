@@ -180,7 +180,7 @@ contract Marketplace is Ownable, Pausable {
   {
     require(sid.length > 0, "Sid cannot be empty");
     require(sid.length <= MAX_SID_LENGTH, "Sid cannot exceed 63 chars");
-    // require(sid.isDomainName(), "Sid format invalid");
+    require(sid.isDomainName(), "Sid format invalid");
     bytes32 id = keccak256(sid);
     require(services[id].owner == address(0), "Service with same sid already exists");
     services[id].owner = msg.sender;
