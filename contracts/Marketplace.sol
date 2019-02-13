@@ -16,6 +16,7 @@ contract Marketplace is Ownable, Pausable {
 
   struct Service {
     address owner;
+    bytes sid;
 
     mapping(bytes32 => Version) versions; // version's hash => Version
     bytes32[] versionsList;
@@ -73,6 +74,7 @@ contract Marketplace is Ownable, Pausable {
    */
 
   event ServiceCreated(
+    bytes sid,
     bytes32 indexed hashedSid,
     address indexed owner
   );
@@ -184,8 +186,9 @@ contract Marketplace is Ownable, Pausable {
     bytes32 hashedSid = keccak256(sid);
     require(services[hashedSid].owner == address(0), "Service with same sid already exists");
     services[hashedSid].owner = msg.sender;
+    services[hashedSid].sid = sid;
     servicesList.push(hashedSid);
-    emit ServiceCreated(hashedSid, msg.sender);
+    emit ServiceCreated(sid, hashedSid, msg.sender);
   }
 
   function transferServiceOwnership(bytes32 hashedSid, address newOwner)

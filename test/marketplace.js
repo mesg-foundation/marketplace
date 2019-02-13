@@ -109,6 +109,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const tx = await marketplace.createService(sids[0], { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceCreated')
       const event = tx.logs[0].args
+      assert.equal(event.sid, sids[0])
       assert.equal(event.hashedSid, padRight64(hashedSids[0]))
       assert.equal(event.owner, accounts[0])
     })
@@ -197,15 +198,19 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
   })
 
   describe('service create', async () => {
-    it('should return 0x0 address on getting service with non existing sids[0]', async () => {
-      assert.equal(await marketplace.services(hashedSids[0]), 0)
+    it('should return empty values on getting service with non existing hashedSids[0]', async () => {
+      const service = await marketplace.services(hashedSids[0])
+      assert.equal(service.owner, 0)
+      assert.isNull(service.sid)
     })
     it('should create service', async () => {
       await marketplace.createService(sids[0], { from: accounts[0] })
     })
     it('should have one service', async () => {
       assert.equal(await marketplace.servicesListLength(), 1)
-      assert.equal(await marketplace.services(hashedSids[0]), accounts[0])
+      const service = await marketplace.services(hashedSids[0])
+      assert.equal(service.owner, accounts[0])
+      assert.equal(service.sid, sids[0])
     })
     it('should fail when create with empty sid', async () => {
       await truffleAssert.reverts(marketplace.createService('0x', { from: accounts[0] }), errors.whenSidNotEmpty)
@@ -221,7 +226,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('should have two services', async () => {
       assert.equal(await marketplace.servicesListLength(), 2)
-      assert.equal(await marketplace.services(hashedSids[1]), accounts[0])
+      const service = await marketplace.services(hashedSids[1])
+      assert.equal(service.owner, accounts[0])
+      assert.equal(service.sid, sids[1])
     })
     it('should create service with valid names', async () => {
       await marketplace.createService(asciiToHex('abcdefghijklmnopqrstuvwxyz'), { from: accounts[0] })
