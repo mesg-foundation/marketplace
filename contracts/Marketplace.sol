@@ -367,17 +367,10 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function isAuthorized(bytes32 hashedSid, address purchaser)
-    public view
+    external view
     returns (bool authorized)
   {
     return services[hashedSid].owner == purchaser ||
       services[hashedSid].purchases[purchaser].expire >= now;
-  }
-
-  function isAuthorized(bytes32 hashedSid)
-    external view
-    returns (bool authorized)
-  {
-    return isAuthorized(hashedSid, msg.sender);
   }
 }
