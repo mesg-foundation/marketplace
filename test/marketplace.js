@@ -507,7 +507,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.isTrue(await marketplace.isAuthorized(sids[0], { from: accounts[1] }))
     })
     it('should has purchased return false for previous service owner', async () => {
-      assert.isFalse(await marketplace.methods['isAuthorized(bytes32,address)'](sids[0], accounts[1], { from: accounts[0] }))
+      assert.isFalse(await marketplace.methods['isAuthorized(bytes32,address)'](sids[0], accounts[0], { from: accounts[1] }))
     })
   })
 })
