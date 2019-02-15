@@ -42,8 +42,8 @@ const errors = {
 
 // constants used for creating services, versions and offers
 const sids = [
-  asciiToHex('test-service-0'),
-  asciiToHex('test-service-1')
+  asciiToHex('test-service-0', 0),
+  asciiToHex('test-service-1', 0)
 ]
 
 const sidHashes = sids.map(sha3)
@@ -51,13 +51,13 @@ const sidHashes = sids.map(sha3)
 const versions = [
   {
     hash: '0x0000000000000000000000000000000000000000000000000000000000000001',
-    manifest: asciiToHex('QmarHSr9aSNaPSR6G9KFPbuLV9aEqJfTk1y9B8pdwqK4Rq'),
-    manifestProtocol: asciiToHex('ipfs')
+    manifest: asciiToHex('QmarHSr9aSNaPSR6G9KFPbuLV9aEqJfTk1y9B8pdwqK4Rq', 0),
+    manifestProtocol: asciiToHex('ipfs', 0)
   },
   {
     hash: '0x0000000000000000000000000000000000000000000000000000000000000002',
-    manifest: asciiToHex('https://mesg.com/download/v2/core.tar'),
-    manifestProtocol: asciiToHex('https')
+    manifest: asciiToHex('https://mesg.com/download/v2/core.tar', 0),
+    manifestProtocol: asciiToHex('https', 0)
   }
 ]
 
@@ -198,7 +198,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
   })
 
   describe('service create', async () => {
-    it('should return empty values on getting service with non existing sidHashes[0]', async () => {
+    it('should return empty values on getting service with non existing sid', async () => {
       const service = await marketplace.services(sidHashes[0])
       assert.equal(service.owner, 0)
       assert.isNull(service.sid)
@@ -215,7 +215,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should fail when create with empty sid', async () => {
       await truffleAssert.reverts(marketplace.createService('0x', { from: accounts[0] }), errors.whenSidNotEmpty)
     })
-    it('should fail when create with existing sidHashes[0]', async () => {
+    it('should fail when create with existing sid', async () => {
       await truffleAssert.reverts(marketplace.createService(sids[0], { from: accounts[0] }), errors.whenServiceNotExist)
     })
     it('should fail when sid is too long', async () => {
@@ -231,18 +231,18 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(service.sid, sids[1])
     })
     it('should create service with valid names', async () => {
-      await marketplace.createService(asciiToHex('abcdefghijklmnopqrstuvwxyz'), { from: accounts[0] })
-      await marketplace.createService(asciiToHex('_1234567890'), { from: accounts[0] })
-      await marketplace.createService(asciiToHex('service'), { from: accounts[0] })
-      await marketplace.createService(asciiToHex('service.mesg'), { from: accounts[0] })
-      await marketplace.createService(asciiToHex('service-0.mesg'), { from: accounts[0] })
-      await marketplace.createService(asciiToHex('_service.mesg'), { from: accounts[0] })
-      await marketplace.createService(asciiToHex('1-service.mesg'), { from: accounts[0] })
-      await marketplace.createService(asciiToHex('core.service.mesg'), { from: accounts[0] })
-      await truffleAssert.reverts(marketplace.createService(asciiToHex('-service'), { from: accounts[0] }), errors.whenSidNotValid)
-      await truffleAssert.reverts(marketplace.createService(asciiToHex('service-'), { from: accounts[0] }), errors.whenSidNotValid)
-      await truffleAssert.reverts(marketplace.createService(asciiToHex('.service'), { from: accounts[0] }), errors.whenSidNotValid)
-      await truffleAssert.reverts(marketplace.createService(asciiToHex('s..ervice'), { from: accounts[0] }), errors.whenSidNotValid)
+      await marketplace.createService(asciiToHex('abcdefghijklmnopqrstuvwxyz', 0), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('_1234567890', 0), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('service', 0), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('service.mesg', 0), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('service-0.mesg', 0), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('_service.mesg', 0), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('1-service.mesg', 0), { from: accounts[0] })
+      await marketplace.createService(asciiToHex('core.service.mesg', 0), { from: accounts[0] })
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('-service', 0), { from: accounts[0] }), errors.whenSidNotValid)
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('service-', 0), { from: accounts[0] }), errors.whenSidNotValid)
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('.service', 0), { from: accounts[0] }), errors.whenSidNotValid)
+      await truffleAssert.reverts(marketplace.createService(asciiToHex('s..ervice', 0), { from: accounts[0] }), errors.whenSidNotValid)
     })
   })
 })
@@ -256,7 +256,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
   describe('service ownership', async () => {
     it('should fail when service doesn\'t exist', async () => {
-      await truffleAssert.reverts(marketplace.transferServiceOwnership(asciiToHex('-'), accounts[0], { from: accounts[0] }), errors.onlyServiceOwner)
+      await truffleAssert.reverts(marketplace.transferServiceOwnership(asciiToHex('-', 0), accounts[0], { from: accounts[0] }), errors.onlyServiceOwner)
     })
     it('should fail when new owner address equals 0x0', async () => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(sidHashes[0], ZERO_ADDRESS, { from: accounts[0] }), errors.whenAddressNotZero)
