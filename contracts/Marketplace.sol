@@ -172,20 +172,20 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  function isServiceExist(bytes32 sid) public view returns (bool exist) {
-    return services[sid].owner != address(0);
+  function isServiceExist(bytes32 sidHash) public view returns (bool exist) {
+    return services[sidHash].owner != address(0);
   }
 
-  function isServiceVersionExist(bytes32 sid, bytes32 hash) public view returns (bool exist) {
-    return services[sid].versions[hash].manifest.length > 0;
+  function isServiceVersionExist(bytes32 sidHash, bytes32 hash) public view returns (bool exist) {
+    return services[sidHash].versions[hash].manifest.length > 0;
   }
 
-  function isServiceOfferExist(bytes32 sid, uint offerIndex) public view returns (bool exist) {
-    return services[sid].offers[offerIndex].duration > 0;
+  function isServiceOfferExist(bytes32 sidHash, uint offerIndex) public view returns (bool exist) {
+    return services[sidHash].offers[offerIndex].duration > 0;
   }
 
-  function isServicesPurchaseExist(bytes32 sid, address purchaser) public view returns (bool exist) {
-    return services[sid].purchases[purchaser].expire > 0;
+  function isServicesPurchaseExist(bytes32 sidHash, address purchaser) public view returns (bool exist) {
+    return services[sidHash].purchases[purchaser].expire > 0;
   }
 
   /**
