@@ -136,7 +136,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   modifier whenServiceExist(bytes32 sid) {
-    require(services[sid].owner != address(0), "Service with this sid does not exist");
+    require(isServiceExist(sid), "Service with this sid does not exist");
     _;
   }
 
@@ -161,13 +161,29 @@ contract Marketplace is Ownable, Pausable {
   }
 
   modifier whenServiceOfferExist(bytes32 sid, uint offerIndex) {
-    require(offerIndex < services[sid].offers.length, "Service offer does not exist");
+    require(isServiceOfferExist(sid, offerIndex), "Service offer does not exist");
     _;
   }
 
   modifier whenServiceOfferActive(bytes32 sid, uint offerIndex) {
     require(services[sid].offers[offerIndex].active, "Service offer is not active");
     _;
+  }
+
+  function isServiceExist(bytes32 sid) public view returns (bool exist) {
+    return services[sid].owner != address(0);
+  }
+
+  function isServiceVersionExist(bytes32 sid, bytes32 hash) public view returns (bool exist) {
+    return services[sid].versions[hash].manifest.length > 0;
+  }
+
+  function isServiceOfferExist(bytes32 sid, uint offerIndex) public view returns (bool exist) {
+    return services[sid].offers[offerIndex].duration > 0;
+  }
+
+  function isServicesPurchaseExist(bytes32 sid, address purchaser) public view returns (bool exist) {
+    return services[sid].purchases[purchaser].expire > 0;
   }
 
   /**
