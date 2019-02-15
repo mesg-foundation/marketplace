@@ -28,6 +28,8 @@ library DnsUtils {
           return false;
         }
         partlen = 0;
+      } else {
+        return false;
       }
       last = c;
     }
