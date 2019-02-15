@@ -16,6 +16,7 @@ contract Marketplace is Ownable, Pausable {
 
   struct Service {
     address owner;
+    bytes sid;
 
     mapping(bytes32 => Version) versions; // version's hash => Version
     bytes32[] versionsList;
@@ -55,10 +56,10 @@ contract Marketplace is Ownable, Pausable {
 
   IERC20 public token;
 
-  mapping(bytes32 => Service) public services; // service's sid => Service
+  mapping(bytes32 => Service) public services; // service's hashed sid => Service
   bytes32[] public servicesList;
 
-  mapping(bytes32 => bytes32) public hashToService; // version's hash => service's sid
+  mapping(bytes32 => bytes32) public hashToService; // version's hash => service's hashed sid
 
   /**
     Constructor
@@ -73,37 +74,38 @@ contract Marketplace is Ownable, Pausable {
    */
 
   event ServiceCreated(
-    bytes32 indexed sid,
+    bytes sid,
+    bytes32 indexed sidHash,
     address indexed owner
   );
 
   event ServiceOwnershipTransferred(
-    bytes32 indexed sid,
+    bytes32 indexed sidHash,
     address indexed previousOwner,
     address indexed newOwner
   );
 
   event ServiceVersionCreated(
-    bytes32 indexed sid,
+    bytes32 indexed sidHash,
     bytes32 indexed hash,
     bytes manifest,
     bytes manifestProtocol
   );
 
   event ServiceOfferCreated(
-    bytes32 indexed sid,
+    bytes32 indexed sidHash,
     uint indexed offerIndex,
     uint price,
     uint duration
   );
 
   event ServiceOfferDisabled(
-    bytes32 indexed sid,
+    bytes32 indexed sidHash,
     uint indexed offerIndex
   );
 
   event ServicePurchased(
-    bytes32 indexed sid,
+    bytes32 indexed sidHash,
     uint indexed offerIndex,
     address indexed purchaser,
     uint price,
@@ -140,13 +142,13 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier onlyServiceOwner(bytes32 sid) {
-    require(services[sid].owner == msg.sender, "Service owner is not the sender");
+  modifier onlyServiceOwner(bytes32 sidHash) {
+    require(services[sidHash].owner == msg.sender, "Service owner is not the sender");
     _;
   }
 
-  modifier notServiceOwner(bytes32 sid) {
-    require(services[sid].owner != msg.sender, "Service owner cannot be the sender");
+  modifier notServiceOwner(bytes32 sidHash) {
+    require(services[sidHash].owner != msg.sender, "Service owner cannot be the sender");
     _;
   }
 
@@ -155,8 +157,8 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceVersionNotEmpty(bytes32 sid) {
-    require(services[sid].versionsList.length > 0, "Cannot create an offer on a service without version");
+  modifier whenServiceVersionNotEmpty(bytes32 sidHash) {
+    require(services[sidHash].versionsList.length > 0, "Cannot create an offer on a service without version");
     _;
   }
 
@@ -165,8 +167,8 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceOfferActive(bytes32 sid, uint offerIndex) {
-    require(services[sid].offers[offerIndex].active, "Service offer is not active");
+  modifier whenServiceOfferActive(bytes32 sidHash, uint offerIndex) {
+    require(services[sidHash].offers[offerIndex].active, "Service offer is not active");
     _;
   }
 
@@ -197,80 +199,81 @@ contract Marketplace is Ownable, Pausable {
     require(sid.length > 0, "Sid cannot be empty");
     require(sid.length <= MAX_SID_LENGTH, "Sid cannot exceed 63 chars");
     require(sid.isDomainName(), "Sid format invalid");
-    bytes32 id = keccak256(sid);
-    require(services[id].owner == address(0), "Service with same sid already exists");
-    services[id].owner = msg.sender;
-    servicesList.push(id);
-    emit ServiceCreated(id, msg.sender);
+    bytes32 sidHash = keccak256(sid);
+    require(services[sidHash].owner == address(0), "Service with same sid already exists");
+    services[sidHash].owner = msg.sender;
+    services[sidHash].sid = sid;
+    servicesList.push(sidHash);
+    emit ServiceCreated(sid, sidHash, msg.sender);
   }
 
-  function transferServiceOwnership(bytes32 sid, address newOwner)
+  function transferServiceOwnership(bytes32 sidHash, address newOwner)
     external
     whenNotPaused
-    onlyServiceOwner(sid)
+    onlyServiceOwner(sidHash)
     whenAddressNotZero(newOwner)
   {
-    emit ServiceOwnershipTransferred(sid, services[sid].owner, newOwner);
-    services[sid].owner = newOwner;
+    emit ServiceOwnershipTransferred(sidHash, services[sidHash].owner, newOwner);
+    services[sidHash].owner = newOwner;
   }
 
   function createServiceVersion(
-    bytes32 sid,
+    bytes32 sidHash,
     bytes32 hash,
     bytes calldata manifest,
     bytes calldata manifestProtocol
   )
     external
     whenNotPaused
-    onlyServiceOwner(sid)
+    onlyServiceOwner(sidHash)
     whenServiceHashNotExist(hash)
     whenManifestNotEmpty(manifest)
     whenManifestProtocolNotEmpty(manifestProtocol)
   {
-    services[sid].versions[hash].manifest = manifest;
-    services[sid].versions[hash].manifestProtocol = manifestProtocol;
-    services[sid].versionsList.push(hash);
-    hashToService[hash] = sid;
-    emit ServiceVersionCreated(sid, hash, manifest, manifestProtocol);
+    services[sidHash].versions[hash].manifest = manifest;
+    services[sidHash].versions[hash].manifestProtocol = manifestProtocol;
+    services[sidHash].versionsList.push(hash);
+    hashToService[hash] = sidHash;
+    emit ServiceVersionCreated(sidHash, hash, manifest, manifestProtocol);
   }
 
-  function createServiceOffer(bytes32 sid, uint price, uint duration)
+  function createServiceOffer(bytes32 sidHash, uint price, uint duration)
     external
     whenNotPaused
-    onlyServiceOwner(sid)
-    whenServiceVersionNotEmpty(sid)
+    onlyServiceOwner(sidHash)
+    whenServiceVersionNotEmpty(sidHash)
     whenDurationNotZero(duration)
     returns (uint offerIndex)
   {
-    Offer[] storage offers = services[sid].offers;
+    Offer[] storage offers = services[sidHash].offers;
     offers.push(Offer({
       price: price,
       duration: duration,
       active: true
     }));
-    emit ServiceOfferCreated(sid, offers.length - 1, price, duration);
+    emit ServiceOfferCreated(sidHash, offers.length - 1, price, duration);
     return offers.length - 1;
   }
 
-  function disableServiceOffer(bytes32 sid, uint offerIndex)
+  function disableServiceOffer(bytes32 sidHash, uint offerIndex)
     external
     whenNotPaused
-    onlyServiceOwner(sid)
-    whenServiceOfferExist(sid, offerIndex)
+    onlyServiceOwner(sidHash)
+    whenServiceOfferExist(sidHash, offerIndex)
   {
-    services[sid].offers[offerIndex].active = false;
-    emit ServiceOfferDisabled(sid, offerIndex);
+    services[sidHash].offers[offerIndex].active = false;
+    emit ServiceOfferDisabled(sidHash, offerIndex);
   }
 
-  function purchase(bytes32 sid, uint offerIndex)
+  function purchase(bytes32 sidHash, uint offerIndex)
     external
     whenNotPaused
-    whenServiceExist(sid)
-    notServiceOwner(sid)
-    whenServiceOfferExist(sid, offerIndex)
-    whenServiceOfferActive(sid, offerIndex)
+    whenServiceExist(sidHash)
+    notServiceOwner(sidHash)
+    whenServiceOfferExist(sidHash, offerIndex)
+    whenServiceOfferActive(sidHash, offerIndex)
   {
-    Service storage service = services[sid];
+    Service storage service = services[sidHash];
     Offer storage offer = service.offers[offerIndex];
 
     // if offer has been purchased for infinity then return
@@ -299,7 +302,7 @@ contract Marketplace is Ownable, Pausable {
 
     // set new expire time
     service.purchases[msg.sender].expire = expire;
-    emit ServicePurchased(sid, offerIndex, msg.sender, offer.price, offer.duration, expire);
+    emit ServicePurchased(sidHash, offerIndex, msg.sender, offer.price, offer.duration, expire);
   }
 
   /**
@@ -313,84 +316,77 @@ contract Marketplace is Ownable, Pausable {
     return servicesList.length;
   }
 
-  function servicesVersionsListLength(bytes32 sid)
+  function servicesVersionsListLength(bytes32 sidHash)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (uint length)
   {
-    return services[sid].versionsList.length;
+    return services[sidHash].versionsList.length;
   }
 
-  function servicesVersionsList(bytes32 sid, uint versionIndex)
+  function servicesVersionsList(bytes32 sidHash, uint versionIndex)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (bytes32 hash)
   {
-    return services[sid].versionsList[versionIndex];
+    return services[sidHash].versionsList[versionIndex];
   }
 
-  function servicesVersion(bytes32 sid, bytes32 hash)
+  function servicesVersion(bytes32 sidHash, bytes32 hash)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (bytes memory manifest, bytes memory manifestProtocol)
   {
-    Version storage version = services[sid].versions[hash];
+    Version storage version = services[sidHash].versions[hash];
     return (version.manifest, version.manifestProtocol);
   }
 
-  function servicesOffersLength(bytes32 sid)
+  function servicesOffersLength(bytes32 sidHash)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (uint length)
   {
-    return services[sid].offers.length;
+    return services[sidHash].offers.length;
   }
 
-  function servicesOffer(bytes32 sid, uint offerIndex)
+  function servicesOffer(bytes32 sidHash, uint offerIndex)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (uint price, uint duration, bool active)
   {
-    Offer storage offer = services[sid].offers[offerIndex];
+    Offer storage offer = services[sidHash].offers[offerIndex];
     return (offer.price, offer.duration, offer.active);
   }
 
-  function servicesPurchasesListLength(bytes32 sid)
+  function servicesPurchasesListLength(bytes32 sidHash)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (uint length)
   {
-    return services[sid].purchasesList.length;
+    return services[sidHash].purchasesList.length;
   }
 
-  function servicesPurchasesList(bytes32 sid, uint purchaseIndex)
+  function servicesPurchasesList(bytes32 sidHash, uint purchaseIndex)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (address purchaser)
   {
-    return services[sid].purchasesList[purchaseIndex];
+    return services[sidHash].purchasesList[purchaseIndex];
   }
 
-  function servicesPurchase(bytes32 sid, address purchaser)
+  function servicesPurchase(bytes32 sidHash, address purchaser)
     external view
-    whenServiceExist(sid)
+    whenServiceExist(sidHash)
     returns (uint expire)
   {
-    return services[sid].purchases[purchaser].expire;
+    return services[sidHash].purchases[purchaser].expire;
   }
 
-  function isAuthorized(bytes32 sid, address purchaser)
-    public view
-    returns (bool authorized)
-  {
-    return services[sid].owner == purchaser ||
-      services[sid].purchases[purchaser].expire >= now;
-  }
-
-  function isAuthorized(bytes32 sid)
+  function isAuthorized(bytes32 sidHash, address purchaser)
     external view
     returns (bool authorized)
   {
-    return isAuthorized(sid, msg.sender);
+    return services[sidHash].owner == purchaser ||
+      services[sidHash].purchases[purchaser].expire >= now;
   }
 }
