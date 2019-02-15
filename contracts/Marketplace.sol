@@ -181,7 +181,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function isServiceOfferExist(bytes32 sidHash, uint offerIndex) public view returns (bool exist) {
-    return services[sidHash].offers[offerIndex].duration > 0;
+    return offerIndex < services[sidHash].offers.length; 
   }
 
   function isServicesPurchaseExist(bytes32 sidHash, address purchaser) public view returns (bool exist) {
