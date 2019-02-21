@@ -15,6 +15,7 @@ contract Marketplace is Ownable, Pausable {
    */
 
   struct Service {
+    uint256 createTime;
     address owner;
     bytes sid;
 
@@ -28,15 +29,18 @@ contract Marketplace is Ownable, Pausable {
   }
 
   struct Purchase {
+    uint256 createTime;
     uint expire;
   }
 
   struct Version {
+    uint256 createTime;
     bytes manifest;
     bytes manifestProtocol;
   }
 
   struct Offer {
+    uint256 createTime;
     uint price;
     uint duration;
     bool active;
@@ -203,6 +207,7 @@ contract Marketplace is Ownable, Pausable {
     require(services[sidHash].owner == address(0), "Service with same sid already exists");
     services[sidHash].owner = msg.sender;
     services[sidHash].sid = sid;
+    services[sidHash].createTime = now;
     servicesList.push(sidHash);
     emit ServiceCreated(sid, sidHash, msg.sender);
   }
@@ -230,8 +235,10 @@ contract Marketplace is Ownable, Pausable {
     whenManifestNotEmpty(manifest)
     whenManifestProtocolNotEmpty(manifestProtocol)
   {
-    services[sidHash].versions[hash].manifest = manifest;
-    services[sidHash].versions[hash].manifestProtocol = manifestProtocol;
+    Version storage version = services[sidHash].versions[hash];
+    version.manifest = manifest;
+    version.manifestProtocol = manifestProtocol;
+    version.createTime = now;
     services[sidHash].versionsList.push(hash);
     hashToService[hash] = sidHash;
     emit ServiceVersionCreated(sidHash, hash, manifest, manifestProtocol);
@@ -247,6 +254,7 @@ contract Marketplace is Ownable, Pausable {
   {
     Offer[] storage offers = services[sidHash].offers;
     offers.push(Offer({
+      createTime: now,
       price: price,
       duration: duration,
       active: true
@@ -295,8 +303,9 @@ contract Marketplace is Ownable, Pausable {
                INFINITY : expire + offer.duration;
 
     // if given address purchase service
-    // 1st time add it to purchases list
+    // 1st time add it to purchases list and set create time
     if (service.purchases[msg.sender].expire == 0) {
+      service.purchases[msg.sender].createTime = now;
       service.purchasesList.push(msg.sender);
     }
 
@@ -335,10 +344,10 @@ contract Marketplace is Ownable, Pausable {
   function servicesVersion(bytes32 sidHash, bytes32 hash)
     external view
     whenServiceExist(sidHash)
-    returns (bytes memory manifest, bytes memory manifestProtocol)
+    returns (uint256 createTime, bytes memory manifest, bytes memory manifestProtocol)
   {
     Version storage version = services[sidHash].versions[hash];
-    return (version.manifest, version.manifestProtocol);
+    return (version.createTime, version.manifest, version.manifestProtocol);
   }
 
   function servicesOffersLength(bytes32 sidHash)
@@ -352,10 +361,10 @@ contract Marketplace is Ownable, Pausable {
   function servicesOffer(bytes32 sidHash, uint offerIndex)
     external view
     whenServiceExist(sidHash)
-    returns (uint price, uint duration, bool active)
+    returns (uint256 createTime, uint price, uint duration, bool active)
   {
     Offer storage offer = services[sidHash].offers[offerIndex];
-    return (offer.price, offer.duration, offer.active);
+    return (offer.createTime, offer.price, offer.duration, offer.active);
   }
 
   function servicesPurchasesListLength(bytes32 sidHash)
@@ -377,9 +386,10 @@ contract Marketplace is Ownable, Pausable {
   function servicesPurchase(bytes32 sidHash, address purchaser)
     external view
     whenServiceExist(sidHash)
-    returns (uint expire)
+    returns (uint256 createTime, uint expire)
   {
-    return services[sidHash].purchases[purchaser].expire;
+    Purchase storage p = services[sidHash].purchases[purchaser];
+    return (p.createTime, p.expire);
   }
 
   function isAuthorized(bytes32 sidHash, address purchaser)

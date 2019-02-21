@@ -43,7 +43,8 @@ const errors = {
 // constants used for creating services, versions and offers
 const sids = [
   asciiToHex('test-service-0', 0),
-  asciiToHex('test-service-1', 0)
+  asciiToHex('test-service-1', 0),
+  asciiToHex('test-service-2', 0)
 ]
 
 const sidHashes = sids.map(sha3)
@@ -57,6 +58,11 @@ const versions = [
   {
     hash: '0x0000000000000000000000000000000000000000000000000000000000000002',
     manifest: asciiToHex('https://mesg.com/download/v2/core.tar', 0),
+    manifestProtocol: asciiToHex('https', 0)
+  },
+  {
+    hash: '0x0000000000000000000000000000000000000000000000000000000000000003',
+    manifest: asciiToHex('https://mesg.com/download/v3/core.tar', 0),
     manifestProtocol: asciiToHex('https', 0)
   }
 ]
@@ -73,6 +79,10 @@ const offers = [
   {
     price: 3000,
     duration: INFINITY
+  },
+  {
+    price: 4000,
+    duration: 4
   }
 ]
 
@@ -211,6 +221,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const service = await marketplace.services(sidHashes[0])
       assert.equal(service.owner, accounts[0])
       assert.equal(service.sid, sids[0])
+      assert.equal(service.sid, sids[0])
     })
     it('should fail when create with empty sid', async () => {
       await truffleAssert.reverts(marketplace.createService('0x', { from: accounts[0] }), errors.whenSidNotEmpty)
@@ -243,6 +254,12 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.createService(asciiToHex('service-', 0), { from: accounts[0] }), errors.whenSidNotValid)
       await truffleAssert.reverts(marketplace.createService(asciiToHex('.service', 0), { from: accounts[0] }), errors.whenSidNotValid)
       await truffleAssert.reverts(marketplace.createService(asciiToHex('s..ervice', 0), { from: accounts[0] }), errors.whenSidNotValid)
+    })
+    it('should set create time', async () => {
+      const tx = await marketplace.createService(sids[2], { from: accounts[0] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash)
+      const service = await marketplace.services(sidHashes[2])
+      assert.equal(service.createTime,  block.timestamp)
     })
   })
 })
@@ -327,6 +344,12 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(version.manifestProtocol, versions[1].manifestProtocol)
       assert.equal(await marketplace.servicesVersionsList(sidHashes[0], 1), versions[1].hash)
     })
+    it('should set create time', async () => {
+      const tx = await marketplace.createServiceVersion(sidHashes[0], versions[2].hash, versions[2].manifest, versions[2].manifestProtocol, { from: accounts[0] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash)
+      const version = await marketplace.servicesVersion(sidHashes[0], versions[2].hash)
+      assert.equal(version.createTime,  block.timestamp)
+    })
   })
 })
 
@@ -395,6 +418,12 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should create service offer with duration set to infinity', async () => {
       await marketplace.createServiceOffer(sidHashes[0], offers[2].price, offers[2].duration, { from: accounts[0] })
     })
+    it('should set create time', async () => {
+      const tx = await marketplace.createServiceOffer(sidHashes[0], offers[3].price, offers[3].duration, { from: accounts[0] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash)
+      const offer = await marketplace.servicesOffer(sidHashes[0], 3)
+      assert.equal(offer.createTime,  block.timestamp)
+    })
   })
 })
 
@@ -404,9 +433,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     marketplace = await Marketplace.new(token.address, { from: owner })
     await marketplace.createService(sids[0], { from: accounts[0] })
     await marketplace.createServiceVersion(sidHashes[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
-    await marketplace.createServiceOffer(sidHashes[0], offers[0].price, offers[0].duration, { from: accounts[0] })
-    await marketplace.createServiceOffer(sidHashes[0], offers[1].price, offers[1].duration, { from: accounts[0] })
-    await marketplace.createServiceOffer(sidHashes[0], offers[2].price, offers[2].duration, { from: accounts[0] })
+    for (let i = 0; i < offers.length; i++) {
+      await marketplace.createServiceOffer(sidHashes[0], offers[i].price, offers[i].duration, { from: accounts[0] })
+    }
   })
 
   describe('service purchase', async () => {
@@ -422,8 +451,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should fail get purchases - service not exist', async () => {
       await truffleAssert.reverts(marketplace.servicesPurchase(sidHashes[1], accounts[0]), errors.whenServiceExist)
     })
-    it('should get purchases return 0', async () => {
-      assert.equal(await marketplace.servicesPurchase(sidHashes[0], accounts[0]), 0)
+    it('should get purchases expire = 0', async () => {
+      const purchase = await marketplace.servicesPurchase(sidHashes[0], accounts[0])
+      assert.equal(purchase.expire, 0)
     })
     it('should has purchased return true for service owner', async () => {
       assert.isTrue(await marketplace.isAuthorized(sidHashes[0], accounts[0]))
@@ -446,6 +476,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should transfer tokens', async () => {
       await token.transfer(accounts[1], initTokenBalance, { from: owner })
       await token.transfer(accounts[2], initTokenBalance, { from: owner })
+      await token.transfer(accounts[3], initTokenBalance, { from: owner })
     })
     it('should fail purchase - sender not approve', async () => {
       await truffleAssert.reverts(marketplace.purchase(sidHashes[0], 0, { from: accounts[1] }), errors.senderDidNotApprove)
@@ -459,8 +490,8 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.servicesPurchasesList(sidHashes[0], 0), accounts[1])
       assert.isTrue(await marketplace.isAuthorized(sidHashes[0], accounts[1]))
 
-      const expire = await marketplace.servicesPurchase(sidHashes[0], accounts[1])
-      assert.equal(expire, block.timestamp + offers[0].duration)
+      const purchase = await marketplace.servicesPurchase(sidHashes[0], accounts[1])
+      assert.equal(purchase.expire, block.timestamp + offers[0].duration)
     })
     it('should purchased service expire', async () => {
       await sleep(offers[0].duration + 1)
@@ -491,14 +522,14 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.servicesPurchasesListLength(sidHashes[0]), 2)
       assert.equal(await marketplace.servicesPurchasesList(sidHashes[0], 0), accounts[1])
 
-      const expire = await marketplace.servicesPurchase(sidHashes[0], accounts[1])
-      assert.equal(expire, block.timestamp + 2 * offers[1].duration)
+      const purchase = await marketplace.servicesPurchase(sidHashes[0], accounts[1])
+      assert.equal(purchase.expire, block.timestamp + 2 * offers[1].duration)
     })
     it('should purchase service with infinity offer', async () => {
       await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
       await marketplace.purchase(sidHashes[0], 2, { from: accounts[1] })
-      const expire = await marketplace.servicesPurchase(sidHashes[0], accounts[1])
-      assert.equal(expire.cmp(INFINITY), 0)
+      const purchase = await marketplace.servicesPurchase(sidHashes[0], accounts[1])
+      assert.equal(purchase.expire.cmp(INFINITY), 0)
     })
     it('should fail purchase service with infinity expire', async () => {
       await token.approve(marketplace.address, offers[2].price, { from: accounts[1] })
@@ -512,6 +543,13 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('should has purchased return false for previous service owner', async () => {
       assert.isFalse(await marketplace.isAuthorized(sidHashes[0], accounts[0]))
+    })
+    it('should set create time', async () => {
+      await token.approve(marketplace.address, offers[3].price, { from: accounts[3] })
+      const tx = await marketplace.purchase(sidHashes[0], 3, { from: accounts[3] })
+      const block = await web3.eth.getBlock(tx.receipt.blockHash)
+      const purchase = await marketplace.servicesPurchase(sidHashes[0], accounts[3])
+      assert.equal(purchase.createTime, block.timestamp)
     })
   })
 })
