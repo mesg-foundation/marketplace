@@ -169,6 +169,21 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(event.previousOwner, accounts[0])
       assert.equal(event.newOwner, accounts[1])
     })
+    it('publishServiceVersion', async () => {
+      const tx = await marketplace.publishServiceVersion(sids[1], versions[1].hash, versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] })
+      truffleAssert.eventEmitted(tx, 'ServiceCreated')
+      truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
+
+      const createEvent = tx.logs[0].args
+      assert.equal(createEvent.sid, sids[1])
+      assert.equal(createEvent.owner, accounts[0])
+
+      const createVersionEvent = tx.logs[1].args
+      assert.equal(createVersionEvent .sid, sids[1])
+      assert.equal(createVersionEvent .hash, padRight(versions[1].hash, 64))
+      assert.equal(createVersionEvent .manifest, versions[1].manifest)
+      assert.equal(createVersionEvent .manifestProtocol, versions[1].manifestProtocol)
+    })
   })
 })
 

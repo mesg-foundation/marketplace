@@ -201,8 +201,8 @@ contract Marketplace is Ownable, Pausable {
     Externals
    */
 
-  function createService(bytes calldata sid)
-    external
+  function createService(bytes memory sid)
+    public
     whenNotPaused
   {
     require(SID_MIN_LEN <= sid.length && sid.length <= SID_MAX_LEN, ERR_SID_LEN);
@@ -228,12 +228,12 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function createServiceVersion(
-    bytes calldata sid,
+    bytes memory sid,
     bytes32 versionHash,
-    bytes calldata manifest,
-    bytes calldata manifestProtocol
+    bytes memory manifest,
+    bytes memory manifestProtocol
   )
-    external
+    public
     whenNotPaused
     whenServiceHashNotExist(versionHash)
     whenManifestNotEmpty(manifest)
@@ -248,6 +248,21 @@ contract Marketplace is Ownable, Pausable {
     services[sidHash].versionsList.push(versionHash);
     hashToService[versionHash] = sidHash;
     emit ServiceVersionCreated(sid, versionHash, manifest, manifestProtocol);
+  }
+
+  function publishServiceVersion(
+    bytes calldata sid,
+    bytes32 versionHash,
+    bytes calldata manifest,
+    bytes calldata manifestProtocol
+  )
+    external
+    whenNotPaused
+  {
+    if (!isServiceExist(sid)) {
+      createService(sid);
+    }
+    createServiceVersion(sid, versionHash, manifest, manifestProtocol);
   }
 
   function createServiceOffer(bytes calldata sid, uint price, uint duration)
