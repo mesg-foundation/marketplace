@@ -176,22 +176,6 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  function isServiceExist(bytes32 sidHash) public view returns (bool exist) {
-    return services[sidHash].owner != address(0);
-  }
-
-  function isServiceVersionExist(bytes32 sidHash, bytes32 hash) public view returns (bool exist) {
-    return services[sidHash].versions[hash].createTime > 0;
-  }
-
-  function isServiceOfferExist(bytes32 sidHash, uint offerIndex) public view returns (bool exist) {
-    return offerIndex < services[sidHash].offers.length;
-  }
-
-  function isServicesPurchaseExist(bytes32 sidHash, address purchaser) public view returns (bool exist) {
-    return services[sidHash].purchases[purchaser].createTime > 0;
-  }
-
   /**
     Externals
    */
@@ -398,5 +382,25 @@ contract Marketplace is Ownable, Pausable {
   {
     return services[sidHash].owner == purchaser ||
       services[sidHash].purchases[purchaser].expire >= now;
+  }
+
+  /**
+    Publics
+   */
+
+  function isServiceExist(bytes32 sidHash) public view returns (bool exist) {
+    return services[sidHash].owner != address(0);
+  }
+
+  function isServiceVersionExist(bytes32 sidHash, bytes32 hash) public view returns (bool exist) {
+    return services[sidHash].versions[hash].createTime > 0;
+  }
+
+  function isServiceOfferExist(bytes32 sidHash, uint offerIndex) public view returns (bool exist) {
+    return offerIndex < services[sidHash].offers.length;
+  }
+
+  function isServicesPurchaseExist(bytes32 sidHash, address purchaser) public view returns (bool exist) {
+    return services[sidHash].purchases[purchaser].createTime > 0;
   }
 }
