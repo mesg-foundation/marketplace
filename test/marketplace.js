@@ -1,14 +1,13 @@
 /* eslint-env mocha */
 /* global contract, artifacts, web3 */
 const assert = require('chai').assert
-const { asciiToHex, padRight, toBN, sha3 } = require('web3-utils')
+const { asciiToHex, padRight, toBN } = require('web3-utils')
 const truffleAssert = require('truffle-assertions')
 
 const Marketplace = artifacts.require('Marketplace')
 const Token = artifacts.require('MESGToken')
 
 // useful shortcut and constant
-const padRight64 = x => padRight(x, 64)
 const sleep = sec => new Promise(resolve => setTimeout(resolve, sec * 1000))
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -46,8 +45,6 @@ const sids = [
   asciiToHex('test-service-1', 0),
   asciiToHex('test-service-2', 0)
 ]
-
-const sidHashes = sids.map(sha3)
 
 const versions = [
   {
@@ -120,15 +117,14 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       truffleAssert.eventEmitted(tx, 'ServiceCreated')
       const event = tx.logs[0].args
       assert.equal(event.sid, sids[0])
-      assert.equal(event.sidHash, padRight64(sidHashes[0]))
       assert.equal(event.owner, accounts[0])
     })
     it('ServiceVersionCreated', async () => {
       const tx = await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
       const event = tx.logs[0].args
-      assert.equal(event.sidHash, padRight64(sidHashes[0]))
-      assert.equal(event.hash, padRight64(versions[0].hash))
+      assert.equal(event.sid, sids[0])
+      assert.equal(event.hash, padRight(versions[0].hash, 64))
       assert.equal(event.manifest, versions[0].manifest)
       assert.equal(event.manifestProtocol, versions[0].manifestProtocol)
     })
@@ -136,7 +132,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const tx = await marketplace.createServiceOffer(sids[0], offers[0].price, offers[0].duration, { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceOfferCreated')
       const event = tx.logs[0].args
-      assert.equal(event.sidHash, padRight64(sidHashes[0]))
+      assert.equal(event.sid, sids[0])
       assert.equal(event.price, offers[0].price)
       assert.equal(event.duration, offers[0].duration)
       assert.equal(event.offerIndex, 0)
@@ -147,7 +143,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const block = await web3.eth.getBlock(tx.receipt.blockHash)
       truffleAssert.eventEmitted(tx, 'ServicePurchased')
       const event = tx.logs[0].args
-      assert.equal(event.sidHash, padRight64(sidHashes[0]))
+      assert.equal(event.sid, sids[0])
       assert.equal(event.offerIndex, 0)
       assert.equal(event.purchaser, accounts[1])
       assert.equal(event.price, offers[0].price)
@@ -158,14 +154,14 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const tx = await marketplace.disableServiceOffer(sids[0], 0, { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceOfferDisabled')
       const event = tx.logs[0].args
-      assert.equal(event.sidHash, padRight64(sidHashes[0]))
+      assert.equal(event.sid, sids[0])
       assert.equal(event.offerIndex, 0)
     })
     it('ServiceOwnershipTransferred', async () => {
       const tx = await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceOwnershipTransferred')
       const event = tx.logs[0].args
-      assert.equal(event.sidHash, padRight64(sidHashes[0]))
+      assert.equal(event.sid, sids[0])
       assert.equal(event.previousOwner, accounts[0])
       assert.equal(event.newOwner, accounts[1])
     })
@@ -209,7 +205,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
   describe('service create', async () => {
     it('service should not exist', async () => {
-      const service = await marketplace.services(sidHashes[0])
+      const service = await marketplace.service(sids[0])
       assert.equal(service.owner, 0)
       assert.isNull(service.sid)
       assert.isFalse(await marketplace.isServiceExist(sids[0]))
@@ -220,7 +216,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should have one service', async () => {
       assert.equal(await marketplace.servicesListLength(), 1)
       assert.isTrue(await marketplace.isServiceExist(sids[0]))
-      const service = await marketplace.services(sidHashes[0])
+      const service = await marketplace.service(sids[0])
       assert.equal(service.owner, accounts[0])
       assert.equal(service.sid, sids[0])
       assert.equal(service.sid, sids[0])
@@ -240,7 +236,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should have two services', async () => {
       assert.equal(await marketplace.servicesListLength(), 2)
       assert.isTrue(await marketplace.isServiceExist(sids[1]))
-      const service = await marketplace.services(sidHashes[1])
+      const service = await marketplace.service(sids[1])
       assert.equal(service.owner, accounts[0])
       assert.equal(service.sid, sids[1])
     })
@@ -261,7 +257,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should set create time', async () => {
       const tx = await marketplace.createService(sids[2], { from: accounts[0] })
       const block = await web3.eth.getBlock(tx.receipt.blockHash)
-      const service = await marketplace.services(sidHashes[2])
+      const service = await marketplace.service(sids[2])
       assert.equal(service.createTime, block.timestamp)
     })
   })

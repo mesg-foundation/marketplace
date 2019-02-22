@@ -79,37 +79,36 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceCreated(
     bytes sid,
-    bytes32 indexed sidHash,
     address indexed owner
   );
 
   event ServiceOwnershipTransferred(
-    bytes32 indexed sidHash,
+    bytes sid,
     address indexed previousOwner,
     address indexed newOwner
   );
 
   event ServiceVersionCreated(
-    bytes32 indexed sidHash,
+    bytes sid,
     bytes32 indexed hash,
     bytes manifest,
     bytes manifestProtocol
   );
 
   event ServiceOfferCreated(
-    bytes32 indexed sidHash,
+    bytes sid,
     uint indexed offerIndex,
     uint price,
     uint duration
   );
 
   event ServiceOfferDisabled(
-    bytes32 indexed sidHash,
+    bytes sid,
     uint indexed offerIndex
   );
 
   event ServicePurchased(
-    bytes32 indexed sidHash,
+    bytes sid,
     uint indexed offerIndex,
     address indexed purchaser,
     uint price,
@@ -188,7 +187,7 @@ contract Marketplace is Ownable, Pausable {
     services[sidHash].sid = sid;
     services[sidHash].createTime = now;
     servicesList.push(sidHash);
-    emit ServiceCreated(sid, sidHash, msg.sender);
+    emit ServiceCreated(sid, msg.sender);
   }
 
   function transferServiceOwnership(bytes calldata sid, address newOwner)
@@ -198,7 +197,7 @@ contract Marketplace is Ownable, Pausable {
   {
     bytes32 sidHash = keccak256(sid);
     require(_isServiceOwner(sidHash, msg.sender), "Sender is not the service owner");
-    emit ServiceOwnershipTransferred(sidHash, services[sidHash].owner, newOwner);
+    emit ServiceOwnershipTransferred(sid, services[sidHash].owner, newOwner);
     services[sidHash].owner = newOwner;
   }
 
@@ -222,7 +221,7 @@ contract Marketplace is Ownable, Pausable {
     version.createTime = now;
     services[sidHash].versionsList.push(hash);
     hashToService[hash] = sidHash;
-    emit ServiceVersionCreated(sidHash, hash, manifest, manifestProtocol);
+    emit ServiceVersionCreated(sid, hash, manifest, manifestProtocol);
   }
 
   function createServiceOffer(bytes calldata sid, uint price, uint duration)
@@ -241,7 +240,7 @@ contract Marketplace is Ownable, Pausable {
       duration: duration,
       active: true
     }));
-    emit ServiceOfferCreated(sidHash, offers.length - 1, price, duration);
+    emit ServiceOfferCreated(sid, offers.length - 1, price, duration);
     return offers.length - 1;
   }
 
@@ -253,7 +252,7 @@ contract Marketplace is Ownable, Pausable {
     require(_isServiceOwner(sidHash, msg.sender), "Sender is not the service owner");
     require(_isServiceOfferExist(sidHash, offerIndex), "Service offer does not exist");
     services[sidHash].offers[offerIndex].active = false;
-    emit ServiceOfferDisabled(sidHash, offerIndex);
+    emit ServiceOfferDisabled(sid, offerIndex);
   }
 
   function purchase(bytes calldata sid, uint offerIndex)
@@ -296,7 +295,7 @@ contract Marketplace is Ownable, Pausable {
 
     // set new expire time
     service.purchases[msg.sender].expire = expire;
-    emit ServicePurchased(sidHash, offerIndex, msg.sender, offer.price, offer.duration, expire);
+    emit ServicePurchased(sid, offerIndex, msg.sender, offer.price, offer.duration, expire);
   }
 
   /**
