@@ -19,28 +19,28 @@ let marketplace = null
 
 // errors
 const errors = {
-  ERR_ADDRESS_ZERO: "address is zero",
+  ERR_ADDRESS_ZERO: 'address is zero',
 
-  ERR_SID_LEN: "sid must be between 1 and 63 characters",
-  ERR_SID_INVALID: "sid must be a valid dns name",
+  ERR_SID_LEN: 'sid must be between 1 and 63 characters',
+  ERR_SID_INVALID: 'sid must be a valid dns name',
 
-  ERR_SERVICE_EXIST: "service with given sid already exists",
-  ERR_SERVICE_NOT_EXIST: "service with given sid does not exist",
-  ERR_SERVICE_NOT_OWNER: "sender is not the service owner",
+  ERR_SERVICE_EXIST: 'service with given sid already exists',
+  ERR_SERVICE_NOT_EXIST: 'service with given sid does not exist',
+  ERR_SERVICE_NOT_OWNER: 'sender is not the service owner',
 
-  ERR_VERSION_EXIST: "version with given hash already exists",
-  ERR_VERSION_MANIFEST_LEN: "version manifest must have at least 1 character",
-  ERR_VERSION_MANIFEST_PROTOCOL_LEN: "version manifest protocol must have at least 1 character",
+  ERR_VERSION_EXIST: 'version with given hash already exists',
+  ERR_VERSION_MANIFEST_LEN: 'version manifest must have at least 1 character',
+  ERR_VERSION_MANIFEST_PROTOCOL_LEN: 'version manifest protocol must have at least 1 character',
 
-  ERR_OFFER_NOT_EXIST: "offer dose not exist",
-  ERR_OFFER_NO_VERSION: "offer must be created with at least 1 version",
-  ERR_OFFER_NOT_ACTIVE: "offer must be active",
-  ERR_OFFER_DURATION_MIN: "offer duration must be grather then 0",
+  ERR_OFFER_NOT_EXIST: 'offer dose not exist',
+  ERR_OFFER_NO_VERSION: 'offer must be created with at least 1 version',
+  ERR_OFFER_NOT_ACTIVE: 'offer must be active',
+  ERR_OFFER_DURATION_MIN: 'offer duration must be greater than 0',
 
-  ERR_PURCHASE_OWNER: "sender cannot purchase his own service",
-  ERR_PURCHASE_INFINITY: "service already purchase for infinity",
-  ERR_PURCHASE_TOKEN_BALANCE: "token balance must be grather to purchase the service",
-  ERR_PURCHASE_TOKEN_APPROVE: "sender must approve the marketplace to spend token",
+  ERR_PURCHASE_OWNER: 'sender cannot purchase his own service',
+  ERR_PURCHASE_INFINITY: 'service already purchase for infinity',
+  ERR_PURCHASE_TOKEN_BALANCE: 'token balance is too low to purchase the service',
+  ERR_PURCHASE_TOKEN_APPROVE: 'sender must approve the marketplace to spend token'
 }
 
 // constants used for creating services, versions and offers

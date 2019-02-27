@@ -74,11 +74,11 @@ contract Marketplace is Ownable, Pausable {
   string constant private ERR_OFFER_NOT_EXIST = "offer dose not exist";
   string constant private ERR_OFFER_NO_VERSION = "offer must be created with at least 1 version";
   string constant private ERR_OFFER_NOT_ACTIVE = "offer must be active";
-  string constant private ERR_OFFER_DURATION_MIN = "offer duration must be grather then 0";
+  string constant private ERR_OFFER_DURATION_MIN = "offer duration must be greater than 0";
 
   string constant private ERR_PURCHASE_OWNER = "sender cannot purchase his own service";
   string constant private ERR_PURCHASE_INFINITY = "service already purchase for infinity";
-  string constant private ERR_PURCHASE_TOKEN_BALANCE = "token balance must be grather to purchase the service";
+  string constant private ERR_PURCHASE_TOKEN_BALANCE = "token balance is too low to purchase the service";
   string constant private ERR_PURCHASE_TOKEN_APPROVE = "sender must approve the marketplace to spend token";
 
   /**
