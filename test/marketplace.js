@@ -179,10 +179,10 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(createEvent.owner, accounts[0])
 
       const createVersionEvent = tx.logs[1].args
-      assert.equal(createVersionEvent .sid, sids[1])
-      assert.equal(createVersionEvent .hash, padRight(versions[1].hash, 64))
-      assert.equal(createVersionEvent .manifest, versions[1].manifest)
-      assert.equal(createVersionEvent .manifestProtocol, versions[1].manifestProtocol)
+      assert.equal(createVersionEvent.sid, sids[1])
+      assert.equal(createVersionEvent.hash, padRight(versions[1].hash, 64))
+      assert.equal(createVersionEvent.manifest, versions[1].manifest)
+      assert.equal(createVersionEvent.manifestProtocol, versions[1].manifestProtocol)
     })
   })
 })
