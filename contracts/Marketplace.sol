@@ -117,26 +117,26 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceVersionCreated(
     bytes sid,
-    bytes32 indexed hash,
+    bytes32 indexed versionHash,
     bytes manifest,
     bytes manifestProtocol
   );
 
   event ServiceOfferCreated(
     bytes sid,
-    uint indexed index,
+    uint indexed offerIndex,
     uint price,
     uint duration
   );
 
   event ServiceOfferDisabled(
     bytes sid,
-    uint indexed index
+    uint indexed offerIndex
   );
 
   event ServicePurchased(
     bytes sid,
-    uint indexed index,
+    uint indexed offerIndex,
     address indexed purchaser,
     uint price,
     uint duration,

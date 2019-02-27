@@ -128,7 +128,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
       const event = tx.logs[0].args
       assert.equal(event.sid, sids[0])
-      assert.equal(event.hash, padRight(versions[0].hash, 64))
+      assert.equal(event.versionHash, padRight(versions[0].hash, 64))
       assert.equal(event.manifest, versions[0].manifest)
       assert.equal(event.manifestProtocol, versions[0].manifestProtocol)
     })
@@ -139,7 +139,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(event.sid, sids[0])
       assert.equal(event.price, offers[0].price)
       assert.equal(event.duration, offers[0].duration)
-      assert.equal(event.index, 0)
+      assert.equal(event.offerIndex, 0)
     })
     it('ServicePurchased', async () => {
       await token.approve(marketplace.address, offers[0].price, { from: accounts[1] })
@@ -148,7 +148,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       truffleAssert.eventEmitted(tx, 'ServicePurchased')
       const event = tx.logs[0].args
       assert.equal(event.sid, sids[0])
-      assert.equal(event.index, 0)
+      assert.equal(event.offerIndex, 0)
       assert.equal(event.purchaser, accounts[1])
       assert.equal(event.price, offers[0].price)
       assert.equal(event.duration, offers[0].duration)
@@ -159,7 +159,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       truffleAssert.eventEmitted(tx, 'ServiceOfferDisabled')
       const event = tx.logs[0].args
       assert.equal(event.sid, sids[0])
-      assert.equal(event.index, 0)
+      assert.equal(event.offerIndex, 0)
     })
     it('ServiceOwnershipTransferred', async () => {
       const tx = await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })
@@ -180,7 +180,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
       const createVersionEvent = tx.logs[1].args
       assert.equal(createVersionEvent.sid, sids[1])
-      assert.equal(createVersionEvent.hash, padRight(versions[1].hash, 64))
+      assert.equal(createVersionEvent.versionHash, padRight(versions[1].hash, 64))
       assert.equal(createVersionEvent.manifest, versions[1].manifest)
       assert.equal(createVersionEvent.manifestProtocol, versions[1].manifestProtocol)
     })
