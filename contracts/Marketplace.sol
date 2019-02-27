@@ -177,23 +177,38 @@ contract Marketplace is Ownable, Pausable {
     Internals
    */
 
-  function _isServiceExist(bytes32 sidHash) internal view returns (bool exist) {
+  function _isServiceExist(bytes32 sidHash)
+    internal view
+    returns (bool exist)
+  {
     return services[sidHash].owner != address(0);
   }
 
-  function _isServiceOwner(bytes32 sidHash, address owner) internal view returns (bool isOwner) {
+  function _isServiceOwner(bytes32 sidHash, address owner)
+    internal view
+    returns (bool isOwner)
+  {
     return services[sidHash].owner == owner;
   }
 
-  function _isServiceVersionExist(bytes32 sidHash, bytes32 versionHash) internal view returns (bool exist) {
+  function _isServiceVersionExist(bytes32 sidHash, bytes32 versionHash)
+    internal view
+    returns (bool exist)
+  {
     return services[sidHash].versions[versionHash].createTime > 0;
   }
 
-  function _isServiceOfferExist(bytes32 sidHash, uint offerIndex) internal view returns (bool exist) {
+  function _isServiceOfferExist(bytes32 sidHash, uint offerIndex)
+    internal view
+    returns (bool exist)
+  {
     return offerIndex < services[sidHash].offers.length;
   }
 
-  function _isServicesPurchaseExist(bytes32 sidHash, address purchaser) internal view returns (bool exist) {
+  function _isServicesPurchaseExist(bytes32 sidHash, address purchaser) 
+    internal view
+    returns (bool exist)
+  {
     return services[sidHash].purchases[purchaser].createTime > 0;
   }
 
@@ -336,7 +351,14 @@ contract Marketplace is Ownable, Pausable {
 
     // set new expire time
     service.purchases[msg.sender].expire = expire;
-    emit ServicePurchased(sid, offerIndex, msg.sender, offer.price, offer.duration, expire);
+    emit ServicePurchased(
+      sid,
+      offerIndex,
+      msg.sender,
+      offer.price,
+      offer.duration,
+      expire
+    );
   }
 
   /**
@@ -378,7 +400,11 @@ contract Marketplace is Ownable, Pausable {
 
   function serviceVersion(bytes calldata sid, bytes32 versionHash)
     external view
-    returns (uint256 createTime, bytes memory manifest, bytes memory manifestProtocol)
+    returns (
+      uint256 createTime,
+      bytes memory manifest,
+      bytes memory manifestProtocol
+    )
   {
     bytes32 sidHash = keccak256(sid);
     require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
@@ -446,27 +472,41 @@ contract Marketplace is Ownable, Pausable {
     Publics
    */
 
-  function isServiceExist(bytes memory sid) public view returns (bool exist) {
+  function isServiceExist(bytes memory sid)
+    public view
+    returns (bool exist)
+  {
     bytes32 sidHash = keccak256(sid);
     return _isServiceExist(sidHash);
   }
 
-  function isServiceOwner(bytes memory sid, address owner) public view returns (bool isOwner) {
+  function isServiceOwner(bytes memory sid, address owner)
+    public view 
+    returns (bool isOwner)
+  {
     bytes32 sidHash = keccak256(sid);
     return _isServiceOwner(sidHash, owner);
   }
 
-  function isServiceVersionExist(bytes memory sid, bytes32 versionHash) public view returns (bool exist) {
+  function isServiceVersionExist(bytes memory sid, bytes32 versionHash)
+    public view
+    returns (bool exist)
+  {
     bytes32 sidHash = keccak256(sid);
     return _isServiceVersionExist(sidHash, versionHash);
   }
 
-  function isServiceOfferExist(bytes memory sid, uint offerIndex) public view returns (bool exist) {
+  function isServiceOfferExist(bytes memory sid, uint offerIndex)
+    public view
+    returns (bool exist)
+  {
     bytes32 sidHash = keccak256(sid);
     return _isServiceOfferExist(sidHash, offerIndex);
   }
 
-  function isServicesPurchaseExist(bytes memory sid, address purchaser) public view returns (bool exist) {
+  function isServicesPurchaseExist(bytes memory sid, address purchaser)
+    public view
+  returns (bool exist) {
     bytes32 sidHash = keccak256(sid);
     return _isServicesPurchaseExist(sidHash, purchaser);
   }
