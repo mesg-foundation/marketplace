@@ -291,7 +291,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
   describe('service ownership', async () => {
     it('should fail when service doesn\'t exist', async () => {
-      await truffleAssert.reverts(marketplace.transferServiceOwnership(asciiToHex('-', 0), accounts[0], { from: accounts[0] }), errors.ERR_SERVICE_NOT_OWNER)
+      await truffleAssert.reverts(marketplace.transferServiceOwnership(asciiToHex('-', 0), accounts[0], { from: accounts[0] }), errors.ERR_SERVICE_NOT_EXIST)
     })
     it('should fail when new owner address equals 0x0', async () => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(sids[0], ZERO_ADDRESS, { from: accounts[0] }), errors.ERR_ADDRESS_ZERO)

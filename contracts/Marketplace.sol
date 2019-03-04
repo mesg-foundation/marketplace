@@ -177,6 +177,15 @@ contract Marketplace is Ownable, Pausable {
     Internals
    */
 
+  function _service(bytes memory sid)
+    internal view
+    returns (Service storage service, bytes32 sidHash)
+  {
+    sidHash = keccak256(sid);
+    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
+    return (services[sidHash], sidHash);
+  }
+
   function _isServiceExist(bytes32 sidHash)
     internal view
     returns (bool exist)
@@ -205,7 +214,7 @@ contract Marketplace is Ownable, Pausable {
     return offerIndex < services[sidHash].offers.length;
   }
 
-  function _isServicesPurchaseExist(bytes32 sidHash, address purchaser) 
+  function _isServicesPurchaseExist(bytes32 sidHash, address purchaser)
     internal view
     returns (bool exist)
   {
@@ -236,10 +245,10 @@ contract Marketplace is Ownable, Pausable {
     whenNotPaused
     whenAddressNotZero(newOwner)
   {
-    bytes32 sidHash = keccak256(sid);
+    (Service storage service, bytes32 sidHash) = _service(sid);
     require(_isServiceOwner(sidHash, msg.sender), ERR_SERVICE_NOT_OWNER);
-    emit ServiceOwnershipTransferred(sid, services[sidHash].owner, newOwner);
-    services[sidHash].owner = newOwner;
+    emit ServiceOwnershipTransferred(sid, service.owner, newOwner);
+    service.owner = newOwner;
   }
 
   function createServiceVersion(
@@ -254,9 +263,9 @@ contract Marketplace is Ownable, Pausable {
     whenManifestNotEmpty(manifest)
     whenManifestProtocolNotEmpty(manifestProtocol)
   {
-    bytes32 sidHash = keccak256(sid);
+    (Service storage service, bytes32 sidHash) = _service(sid);
     require(_isServiceOwner(sidHash, msg.sender), ERR_SERVICE_NOT_OWNER);
-    Version storage version = services[sidHash].versions[versionHash];
+    Version storage version = service.versions[versionHash];
     version.manifest = manifest;
     version.manifestProtocol = manifestProtocol;
     version.createTime = now;
@@ -286,9 +295,9 @@ contract Marketplace is Ownable, Pausable {
     whenDurationNotZero(duration)
     returns (uint offerIndex)
   {
-    bytes32 sidHash = keccak256(sid);
+    (Service storage service, bytes32 sidHash) = _service(sid);
     require(_isServiceOwner(sidHash, msg.sender), ERR_SERVICE_NOT_OWNER);
-    require(services[sidHash].versionsList.length > 0, ERR_OFFER_NO_VERSION);
+    require(service.versionsList.length > 0, ERR_OFFER_NO_VERSION);
     Offer[] storage offers = services[sidHash].offers;
     offers.push(Offer({
       createTime: now,
@@ -304,10 +313,10 @@ contract Marketplace is Ownable, Pausable {
     external
     whenNotPaused
   {
-    bytes32 sidHash = keccak256(sid);
+    (Service storage service, bytes32 sidHash) = _service(sid);
     require(_isServiceOwner(sidHash, msg.sender), ERR_SERVICE_NOT_OWNER);
     require(_isServiceOfferExist(sidHash, offerIndex), ERR_OFFER_NOT_EXIST);
-    services[sidHash].offers[offerIndex].active = false;
+    service.offers[offerIndex].active = false;
     emit ServiceOfferDisabled(sid, offerIndex);
   }
 
@@ -315,13 +324,11 @@ contract Marketplace is Ownable, Pausable {
     external
     whenNotPaused
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
+    (Service storage service, bytes32 sidHash) = _service(sid);
     require(!_isServiceOwner(sidHash, msg.sender), ERR_PURCHASE_OWNER);
     require(_isServiceOfferExist(sidHash, offerIndex), ERR_OFFER_NOT_EXIST);
-    require(services[sidHash].offers[offerIndex].active, ERR_OFFER_NOT_ACTIVE);
+    require(service.offers[offerIndex].active, ERR_OFFER_NOT_ACTIVE);
 
-    Service storage service = services[sidHash];
     Offer storage offer = service.offers[offerIndex];
 
     // if offer has been purchased for infinity then return
@@ -384,18 +391,16 @@ contract Marketplace is Ownable, Pausable {
     external view
     returns (uint length)
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    return services[sidHash].versionsList.length;
+    (Service storage s,) = _service(sid);
+    return s.versionsList.length;
   }
 
   function serviceVersionHash(bytes calldata sid, uint versionIndex)
     external view
     returns (bytes32 versionHash)
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    return services[sidHash].versionsList[versionIndex];
+    (Service storage s,) = _service(sid);
+    return s.versionsList[versionIndex];
   }
 
   function serviceVersion(bytes calldata sid, bytes32 versionHash)
@@ -406,9 +411,8 @@ contract Marketplace is Ownable, Pausable {
       bytes memory manifestProtocol
     )
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    Version storage version = services[sidHash].versions[versionHash];
+    (Service storage s,) = _service(sid);
+    Version storage version = s.versions[versionHash];
     return (version.createTime, version.manifest, version.manifestProtocol);
   }
 
@@ -416,18 +420,16 @@ contract Marketplace is Ownable, Pausable {
     external view
     returns (uint length)
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    return services[sidHash].offers.length;
+    (Service storage s,) = _service(sid);
+    return s.offers.length;
   }
 
   function serviceOffer(bytes calldata sid, uint offerIndex)
     external view
     returns (uint256 createTime, uint price, uint duration, bool active)
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    Offer storage offer = services[sidHash].offers[offerIndex];
+    (Service storage s,) = _service(sid);
+    Offer storage offer = s.offers[offerIndex];
     return (offer.createTime, offer.price, offer.duration, offer.active);
   }
 
@@ -435,27 +437,24 @@ contract Marketplace is Ownable, Pausable {
     external view
     returns (uint length)
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    return services[sidHash].purchasesList.length;
+    (Service storage s,) = _service(sid);
+    return s.purchasesList.length;
   }
 
   function servicePurchaseAddress(bytes calldata sid, uint purchaseIndex)
     external view
     returns (address purchaser)
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    return services[sidHash].purchasesList[purchaseIndex];
+    (Service storage s,) = _service(sid);
+    return s.purchasesList[purchaseIndex];
   }
 
   function servicePurchase(bytes calldata sid, address purchaser)
     external view
     returns (uint256 createTime, uint expire)
   {
-    bytes32 sidHash = keccak256(sid);
-    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
-    Purchase storage p = services[sidHash].purchases[purchaser];
+    (Service storage s,) = _service(sid);
+    Purchase storage p = s.purchases[purchaser];
     return (p.createTime, p.expire);
   }
 
@@ -463,9 +462,8 @@ contract Marketplace is Ownable, Pausable {
     external view
     returns (bool authorized)
   {
-    bytes32 sidHash = keccak256(sid);
-    return services[sidHash].owner == purchaser ||
-      services[sidHash].purchases[purchaser].expire >= now;
+    (Service storage s,) = _service(sid);
+    return s.owner == purchaser || s.purchases[purchaser].expire >= now;
   }
 
   /**
@@ -481,7 +479,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   function isServiceOwner(bytes memory sid, address owner)
-    public view 
+    public view
     returns (bool isOwner)
   {
     bytes32 sidHash = keccak256(sid);
