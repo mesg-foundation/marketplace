@@ -39,7 +39,7 @@ const errors = {
 
   ERR_PURCHASE_OWNER: 'sender cannot purchase his own service',
   ERR_PURCHASE_INFINITY: 'service already purchase for infinity',
-  ERR_PURCHASE_TOKEN_BALANCE: 'token balance is too low to purchase the service',
+  ERR_PURCHASE_TOKEN_BALANCE: 'token balance must be greater to purchase the service',
   ERR_PURCHASE_TOKEN_APPROVE: 'sender must approve the marketplace to spend token'
 }
 
