@@ -184,6 +184,11 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(createVersionEvent.manifest, versions[1].manifest)
       assert.equal(createVersionEvent.manifestProtocol, versions[1].manifestProtocol)
     })
+    it('publishServiceVersion only create version', async () => {
+      const tx = await marketplace.publishServiceVersion(sids[1], versions[2].hash, versions[2].manifest, versions[2].manifestProtocol, { from: accounts[0] })
+      truffleAssert.eventNotEmitted(tx, 'ServiceCreated')
+      truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
+    })
   })
 })
 
@@ -212,6 +217,9 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('purchase', async () => {
       await truffleAssert.reverts(marketplace.purchase(sids[0], 0, { from: accounts[0] }))
+    })
+    it('publishServiceVersion', async () => {
+      await truffleAssert.reverts(marketplace.publishServiceVersion(sids[1], versions[1].hash, versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] }))
     })
   })
 })
@@ -299,8 +307,14 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     it('should fail when called by not owner', async () => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[1] }), errors.ERR_SERVICE_NOT_OWNER)
     })
+    it('isServiceOwner should return false when called by not owner', async () => {
+      assert.isFalse(await marketplace.isServiceOwner(sids[0], accounts[1]))
+    })
     it('should transfer', async () => {
       await marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] })
+    })
+    it('isServiceOwner should return true when called by owner', async () => {
+      assert.isTrue(await marketplace.isServiceOwner(sids[0], accounts[1]))
     })
   })
 })
