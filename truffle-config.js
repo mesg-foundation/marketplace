@@ -80,7 +80,7 @@ module.exports = {
     mainnet: {
       provider: () => new HDWalletProvider(privateKey, 'https://mainnet.infura.io/v3/' + infuraKey),
       network_id: 1, // Mainnet's id
-      gas: 5500000, // Mainnet has a lower block limit than mainnet
+      gas: 6500000, // Mainnet has a lower block limit than mainnet
       gasPrice: 20000000000, // 20 gwei (in wei) (default: 100 gwei)
       confirmations: 2, // # of confs to wait between deployments. (default: 0)
       // timeoutBlocks: 200, // # of blocks before a deployment times out  (minimum/default: 50)
@@ -91,7 +91,7 @@ module.exports = {
     ropsten: {
       provider: () => new HDWalletProvider(privateKey, 'https://ropsten.infura.io/v3/' + infuraKey),
       network_id: 3, // Ropsten's id
-      gas: 5500000, // Ropsten has a lower block limit than mainnet
+      gas: 6500000, // Ropsten has a lower block limit than mainnet
       gasPrice: 20000000000, // 20 gwei (in wei) (default: 100 gwei)
       confirmations: 2, // # of confs to wait between deployments. (default: 0)
       // timeoutBlocks: 200, // # of blocks before a deployment times out  (minimum/default: 50)
