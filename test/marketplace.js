@@ -128,7 +128,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
       const event = tx.logs[0].args
       assert.equal(event.sid, sids[0])
-      assert.equal(event.versionHash, padRight(versions[0].hash, 64))
+      assert.equal(event.hash, padRight(versions[0].hash, 64))
       assert.equal(event.manifest, versions[0].manifest)
       assert.equal(event.manifestProtocol, versions[0].manifestProtocol)
     })
@@ -180,7 +180,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
       const createVersionEvent = tx.logs[1].args
       assert.equal(createVersionEvent.sid, sids[1])
-      assert.equal(createVersionEvent.versionHash, padRight(versions[1].hash, 64))
+      assert.equal(createVersionEvent.hash, padRight(versions[1].hash, 64))
       assert.equal(createVersionEvent.manifest, versions[1].manifest)
       assert.equal(createVersionEvent.manifestProtocol, versions[1].manifestProtocol)
     })
@@ -340,7 +340,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.serviceVersionsLength(sids[1]), errors.ERR_SERVICE_NOT_EXIST)
     })
     it('should fail get version list item - service not exist', async () => {
-      await truffleAssert.reverts(marketplace.serviceVersionHash(sids[1], 0), errors.ERR_SERVICE_NOT_EXIST)
+      await truffleAssert.reverts(marketplace.serviceHash(sids[1], 0), errors.ERR_SERVICE_NOT_EXIST)
     })
     it('should fail get version - service not exist', async () => {
       await truffleAssert.reverts(marketplace.serviceVersion(sids[1], versions[0].hash), errors.ERR_SERVICE_NOT_EXIST)
@@ -368,7 +368,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const version = await marketplace.serviceVersion(sids[0], versions[0].hash)
       assert.equal(version.manifest, versions[0].manifest)
       assert.equal(version.manifestProtocol, versions[0].manifestProtocol)
-      assert.equal(await marketplace.serviceVersionHash(sids[0], 0), versions[0].hash)
+      assert.equal(await marketplace.serviceHash(sids[0], 0), versions[0].hash)
     })
     it('should create 2nd service version', async () => {
       await marketplace.createServiceVersion(sids[0], versions[1].hash, versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] })
@@ -379,7 +379,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       const version = await marketplace.serviceVersion(sids[0], versions[1].hash)
       assert.equal(version.manifest, versions[1].manifest)
       assert.equal(version.manifestProtocol, versions[1].manifestProtocol)
-      assert.equal(await marketplace.serviceVersionHash(sids[0], 1), versions[1].hash)
+      assert.equal(await marketplace.serviceHash(sids[0], 1), versions[1].hash)
     })
     it('should set create time', async () => {
       const tx = await marketplace.createServiceVersion(sids[0], versions[2].hash, versions[2].manifest, versions[2].manifestProtocol, { from: accounts[0] })
