@@ -19,7 +19,7 @@ contract Marketplace is Ownable, Pausable {
     address owner;
     bytes sid;
 
-    mapping(bytes32 => Version) versions; // version's hash => Version
+    mapping(bytes32 => Version) versions; // hash => Version
     bytes32[] versionsList;
 
     Offer[] offers;
@@ -87,10 +87,10 @@ contract Marketplace is Ownable, Pausable {
 
   IERC20 public token;
 
-  mapping(bytes32 => Service) public services; // service's hashed sid => Service
+  mapping(bytes32 => Service) public services; // service hashed sid => Service
   bytes32[] public servicesList;
 
-  mapping(bytes32 => bytes32) public hashToService; // version's hash => service's hashed sid
+  mapping(bytes32 => bytes32) public hashToService; // hash => service hashed sid
 
   /**
     Constructor
