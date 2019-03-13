@@ -117,7 +117,7 @@ contract Marketplace is Ownable, Pausable {
 
   event ServiceVersionCreated(
     bytes sid,
-    bytes32 indexed hash,
+    bytes32 indexed versionHash,
     bytes manifest,
     bytes manifestProtocol
   );
@@ -167,8 +167,8 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceHashNotExist(bytes32 hash) {
-    require(services[hashToService[hash]].owner == address(0), ERR_VERSION_EXIST);
+  modifier whenServiceHashNotExist(bytes32 versionHash) {
+    require(services[hashToService[versionHash]].owner == address(0), ERR_VERSION_EXIST);
     _;
   }
 
@@ -200,11 +200,11 @@ contract Marketplace is Ownable, Pausable {
     return services[sidHash].owner == owner;
   }
 
-  function _isServiceVersionExist(bytes32 sidHash, bytes32 hash)
+  function _isServiceVersionExist(bytes32 sidHash, bytes32 versionHash)
     internal view
     returns (bool exist)
   {
-    return services[sidHash].versions[hash].createTime > 0;
+    return services[sidHash].versions[versionHash].createTime > 0;
   }
 
   function _isServiceOfferExist(bytes32 sidHash, uint offerIndex)
@@ -253,30 +253,30 @@ contract Marketplace is Ownable, Pausable {
 
   function createServiceVersion(
     bytes memory sid,
-    bytes32 hash,
+    bytes32 versionHash,
     bytes memory manifest,
     bytes memory manifestProtocol
   )
     public
     whenNotPaused
-    whenServiceHashNotExist(hash)
+    whenServiceHashNotExist(versionHash)
     whenManifestNotEmpty(manifest)
     whenManifestProtocolNotEmpty(manifestProtocol)
   {
     (Service storage service, bytes32 sidHash) = _service(sid);
     require(_isServiceOwner(sidHash, msg.sender), ERR_SERVICE_NOT_OWNER);
-    Version storage version = service.versions[hash];
+    Version storage version = service.versions[versionHash];
     version.manifest = manifest;
     version.manifestProtocol = manifestProtocol;
     version.createTime = now;
-    services[sidHash].versionsList.push(hash);
-    hashToService[hash] = sidHash;
-    emit ServiceVersionCreated(sid, hash, manifest, manifestProtocol);
+    services[sidHash].versionsList.push(versionHash);
+    hashToService[versionHash] = sidHash;
+    emit ServiceVersionCreated(sid, versionHash, manifest, manifestProtocol);
   }
 
   function publishServiceVersion(
     bytes calldata sid,
-    bytes32 hash,
+    bytes32 versionHash,
     bytes calldata manifest,
     bytes calldata manifestProtocol
   )
@@ -286,7 +286,7 @@ contract Marketplace is Ownable, Pausable {
     if (!isServiceExist(sid)) {
       createService(sid);
     }
-    createServiceVersion(sid, hash, manifest, manifestProtocol);
+    createServiceVersion(sid, versionHash, manifest, manifestProtocol);
   }
 
   function createServiceOffer(bytes calldata sid, uint price, uint duration)
@@ -395,15 +395,15 @@ contract Marketplace is Ownable, Pausable {
     return s.versionsList.length;
   }
 
-  function serviceHash(bytes calldata sid, uint versionIndex)
+  function serviceVersionHash(bytes calldata sid, uint versionIndex)
     external view
-    returns (bytes32 hash)
+    returns (bytes32 versionHash)
   {
     (Service storage s,) = _service(sid);
     return s.versionsList[versionIndex];
   }
 
-  function serviceVersion(bytes calldata sid, bytes32 hash)
+  function serviceVersion(bytes calldata sid, bytes32 versionHash)
     external view
     returns (
       uint256 createTime,
@@ -412,7 +412,7 @@ contract Marketplace is Ownable, Pausable {
     )
   {
     (Service storage s,) = _service(sid);
-    Version storage version = s.versions[hash];
+    Version storage version = s.versions[versionHash];
     return (version.createTime, version.manifest, version.manifestProtocol);
   }
 
@@ -486,12 +486,12 @@ contract Marketplace is Ownable, Pausable {
     return _isServiceOwner(sidHash, owner);
   }
 
-  function isServiceVersionExist(bytes memory sid, bytes32 hash)
+  function isServiceVersionExist(bytes memory sid, bytes32 versionHash)
     public view
     returns (bool exist)
   {
     bytes32 sidHash = keccak256(sid);
-    return _isServiceVersionExist(sidHash, hash);
+    return _isServiceVersionExist(sidHash, versionHash);
   }
 
   function isServiceOfferExist(bytes memory sid, uint offerIndex)
