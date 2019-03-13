@@ -19,7 +19,7 @@ contract Marketplace is Ownable, Pausable {
     address owner;
     bytes sid;
 
-    mapping(bytes32 => Version) versions; // hash => Version
+    mapping(bytes32 => Version) versions; // version ash => Version
     bytes32[] versionsList;
 
     Offer[] offers;
@@ -90,7 +90,7 @@ contract Marketplace is Ownable, Pausable {
   mapping(bytes32 => Service) public services; // service hashed sid => Service
   bytes32[] public servicesList;
 
-  mapping(bytes32 => bytes32) public hashToService; // hash => service hashed sid
+  mapping(bytes32 => bytes32) public versionHashToService; // version hash => service hashed sid
 
   /**
     Constructor
@@ -167,8 +167,8 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceHashNotExist(bytes32 versionHash) {
-    require(services[hashToService[versionHash]].owner == address(0), ERR_VERSION_EXIST);
+  modifier whenServiceVersionHashNotExist(bytes32 versionHash) {
+    require(!isServiceVersionExist(versionHash), ERR_VERSION_EXIST);
     _;
   }
 
@@ -259,7 +259,7 @@ contract Marketplace is Ownable, Pausable {
   )
     public
     whenNotPaused
-    whenServiceHashNotExist(versionHash)
+    whenServiceVersionHashNotExist(versionHash)
     whenManifestNotEmpty(manifest)
     whenManifestProtocolNotEmpty(manifestProtocol)
   {
@@ -270,7 +270,7 @@ contract Marketplace is Ownable, Pausable {
     version.manifestProtocol = manifestProtocol;
     version.createTime = now;
     services[sidHash].versionsList.push(versionHash);
-    hashToService[versionHash] = sidHash;
+    versionHashToService[versionHash] = sidHash;
     emit ServiceVersionCreated(sid, versionHash, manifest, manifestProtocol);
   }
 
