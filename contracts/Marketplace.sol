@@ -167,7 +167,7 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceVersionHashNotExist(bytes32 versionHash) {
+  modifier whenServiceVersionNotExist(bytes32 versionHash) {
     require(!isServiceVersionExist(versionHash), ERR_VERSION_EXIST);
     _;
   }
@@ -200,13 +200,6 @@ contract Marketplace is Ownable, Pausable {
     return services[sidHash].owner == owner;
   }
 
-  function _isServiceVersionExist(bytes32 sidHash, bytes32 versionHash)
-    internal view
-    returns (bool exist)
-  {
-    return services[sidHash].versions[versionHash].createTime > 0;
-  }
-
   function _isServiceOfferExist(bytes32 sidHash, uint offerIndex)
     internal view
     returns (bool exist)
@@ -232,7 +225,7 @@ contract Marketplace is Ownable, Pausable {
     require(SID_MIN_LEN <= sid.length && sid.length <= SID_MAX_LEN, ERR_SID_LEN);
     require(sid.isDomainName(), ERR_SID_INVALID);
     bytes32 sidHash = keccak256(sid);
-    require(services[sidHash].owner == address(0), ERR_SERVICE_EXIST);
+    require(!_isServiceExist(sidHash), ERR_SERVICE_EXIST);
     services[sidHash].owner = msg.sender;
     services[sidHash].sid = sid;
     services[sidHash].createTime = now;
@@ -259,7 +252,7 @@ contract Marketplace is Ownable, Pausable {
   )
     public
     whenNotPaused
-    whenServiceVersionHashNotExist(versionHash)
+    whenServiceVersionNotExist(versionHash)
     whenManifestNotEmpty(manifest)
     whenManifestProtocolNotEmpty(manifestProtocol)
   {
@@ -403,7 +396,7 @@ contract Marketplace is Ownable, Pausable {
     return s.versionsList[versionIndex];
   }
 
-  function serviceVersion(bytes calldata sid, bytes32 versionHash)
+  function serviceVersion(bytes32 versionHash)
     external view
     returns (
       uint256 createTime,
@@ -411,8 +404,9 @@ contract Marketplace is Ownable, Pausable {
       bytes memory manifestProtocol
     )
   {
-    (Service storage s,) = _service(sid);
-    Version storage version = s.versions[versionHash];
+    bytes32 sidHash = versionHashToService[versionHash];
+    require(_isServiceExist(sidHash), ERR_SERVICE_NOT_EXIST);
+    Version storage version = services[sidHash].versions[versionHash];
     return (version.createTime, version.manifest, version.manifestProtocol);
   }
 
@@ -486,12 +480,11 @@ contract Marketplace is Ownable, Pausable {
     return _isServiceOwner(sidHash, owner);
   }
 
-  function isServiceVersionExist(bytes memory sid, bytes32 versionHash)
+  function isServiceVersionExist(bytes32 versionHash)
     public view
     returns (bool exist)
   {
-    bytes32 sidHash = keccak256(sid);
-    return _isServiceVersionExist(sidHash, versionHash);
+    return _isServiceExist(versionHashToService[versionHash]);
   }
 
   function isServiceOfferExist(bytes memory sid, uint offerIndex)
