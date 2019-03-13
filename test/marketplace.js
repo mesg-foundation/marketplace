@@ -44,23 +44,23 @@ const errors = {
 
 // constants used for creating services, versions and offers
 const sids = [
-  asciiToHex('test-service-0'),
-  asciiToHex('test-service-1'),
-  asciiToHex('test-service-2')
+  asciiToHex('test-service-0', 0),
+  asciiToHex('test-service-1', 0),
+  asciiToHex('test-service-2', 0)
 ]
 
 const versions = [
   {
-    manifest: asciiToHex('QmarHSr9aSNaPSR6G9KFPbuLV9aEqJfTk1y9B8pdwqK4Rq'),
-    manifestProtocol: asciiToHex('ipfs')
+    manifest: asciiToHex('QmarHSr9aSNaPSR6G9KFPbuLV9aEqJfTk1y9B8pdwqK4Rq', 0),
+    manifestProtocol: asciiToHex('ipfs', 0)
   },
   {
-    manifest: asciiToHex('https://mesg.com/download/v2/core.tar'),
-    manifestProtocol: asciiToHex('https')
+    manifest: asciiToHex('https://mesg.com/download/v2/core.tar', 0),
+    manifestProtocol: asciiToHex('https', 0)
   },
   {
-    manifest: asciiToHex('https://mesg.com/download/v3/core.tar'),
-    manifestProtocol: asciiToHex('https')
+    manifest: asciiToHex('https://mesg.com/download/v3/core.tar', 0),
+    manifestProtocol: asciiToHex('https', 0)
   }
 ]
 
