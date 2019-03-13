@@ -167,12 +167,6 @@ contract Marketplace is Ownable, Pausable {
     _;
   }
 
-  modifier whenServiceVersionNotExist(bytes32 versionHash) {
-    require(!isServiceVersionExist(versionHash), ERR_VERSION_EXIST);
-    _;
-  }
-
-
   /**
     Internals
    */
@@ -246,18 +240,18 @@ contract Marketplace is Ownable, Pausable {
 
   function createServiceVersion(
     bytes memory sid,
-    bytes32 versionHash,
     bytes memory manifest,
     bytes memory manifestProtocol
   )
     public
     whenNotPaused
-    whenServiceVersionNotExist(versionHash)
     whenManifestNotEmpty(manifest)
     whenManifestProtocolNotEmpty(manifestProtocol)
   {
     (Service storage service, bytes32 sidHash) = _service(sid);
     require(_isServiceOwner(sidHash, msg.sender), ERR_SERVICE_NOT_OWNER);
+    bytes32 versionHash = keccak256(abi.encodePacked(msg.sender, sid, manifest, manifestProtocol));
+    require(!isServiceVersionExist(versionHash), ERR_VERSION_EXIST);
     Version storage version = service.versions[versionHash];
     version.manifest = manifest;
     version.manifestProtocol = manifestProtocol;
@@ -269,7 +263,6 @@ contract Marketplace is Ownable, Pausable {
 
   function publishServiceVersion(
     bytes calldata sid,
-    bytes32 versionHash,
     bytes calldata manifest,
     bytes calldata manifestProtocol
   )
@@ -279,7 +272,7 @@ contract Marketplace is Ownable, Pausable {
     if (!isServiceExist(sid)) {
       createService(sid);
     }
-    createServiceVersion(sid, versionHash, manifest, manifestProtocol);
+    createServiceVersion(sid, manifest, manifestProtocol);
   }
 
   function createServiceOffer(bytes calldata sid, uint price, uint duration)
