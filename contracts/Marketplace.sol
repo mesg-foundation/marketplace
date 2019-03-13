@@ -19,7 +19,7 @@ contract Marketplace is Ownable, Pausable {
     address owner;
     bytes sid;
 
-    mapping(bytes32 => Version) versions; // version ash => Version
+    mapping(bytes32 => Version) versions; // version hash => Version
     bytes32[] versionsList;
 
     Offer[] offers;
