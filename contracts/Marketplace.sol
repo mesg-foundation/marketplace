@@ -364,6 +364,7 @@ contract Marketplace is Ownable, Pausable {
   /**
     External views
    */
+
   function servicesLength()
     external view
     returns (uint length)
