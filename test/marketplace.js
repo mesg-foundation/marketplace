@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 /* global contract, artifacts, web3 */
 const assert = require('chai').assert
-const { asciiToHex, padRight, toBN } = require('web3-utils')
+const { asciiToHex, soliditySha3, toBN } = require('web3-utils')
 const truffleAssert = require('truffle-assertions')
 
 const Marketplace = artifacts.require('Marketplace')
@@ -10,7 +10,6 @@ const Token = artifacts.require('MESGToken')
 // useful shortcut and constant
 const sleep = sec => new Promise(resolve => setTimeout(resolve, sec * 1000))
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000'
 const INFINITY = toBN('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
 
 // contracts object
@@ -52,17 +51,14 @@ const sids = [
 
 const versions = [
   {
-    hash: '0x0000000000000000000000000000000000000000000000000000000000000001',
     manifest: asciiToHex('QmarHSr9aSNaPSR6G9KFPbuLV9aEqJfTk1y9B8pdwqK4Rq', 0),
     manifestProtocol: asciiToHex('ipfs', 0)
   },
   {
-    hash: '0x0000000000000000000000000000000000000000000000000000000000000002',
     manifest: asciiToHex('https://mesg.com/download/v2/core.tar', 0),
     manifestProtocol: asciiToHex('https', 0)
   },
   {
-    hash: '0x0000000000000000000000000000000000000000000000000000000000000003',
     manifest: asciiToHex('https://mesg.com/download/v3/core.tar', 0),
     manifestProtocol: asciiToHex('https', 0)
   }
@@ -124,11 +120,11 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(event.owner, accounts[0])
     })
     it('ServiceVersionCreated', async () => {
-      const tx = await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
+      const tx = await marketplace.createServiceVersion(sids[0], versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
       const event = tx.logs[0].args
       assert.equal(event.sid, sids[0])
-      assert.equal(event.hash, padRight(versions[0].hash, 64))
+      assert.equal(event.versionHash, soliditySha3(accounts[0], sids[0], versions[0].manifest, versions[0].manifestProtocol))
       assert.equal(event.manifest, versions[0].manifest)
       assert.equal(event.manifestProtocol, versions[0].manifestProtocol)
     })
@@ -170,7 +166,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(event.newOwner, accounts[1])
     })
     it('publishServiceVersion', async () => {
-      const tx = await marketplace.publishServiceVersion(sids[1], versions[1].hash, versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] })
+      const tx = await marketplace.publishServiceVersion(sids[1], versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] })
       truffleAssert.eventEmitted(tx, 'ServiceCreated')
       truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
 
@@ -180,12 +176,12 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
 
       const createVersionEvent = tx.logs[1].args
       assert.equal(createVersionEvent.sid, sids[1])
-      assert.equal(createVersionEvent.hash, padRight(versions[1].hash, 64))
+      assert.equal(createVersionEvent.versionHash, soliditySha3(accounts[0], sids[1], versions[1].manifest, versions[1].manifestProtocol))
       assert.equal(createVersionEvent.manifest, versions[1].manifest)
       assert.equal(createVersionEvent.manifestProtocol, versions[1].manifestProtocol)
     })
     it('publishServiceVersion only create version', async () => {
-      const tx = await marketplace.publishServiceVersion(sids[1], versions[2].hash, versions[2].manifest, versions[2].manifestProtocol, { from: accounts[0] })
+      const tx = await marketplace.publishServiceVersion(sids[1], versions[2].manifest, versions[2].manifestProtocol, { from: accounts[0] })
       truffleAssert.eventNotEmitted(tx, 'ServiceCreated')
       truffleAssert.eventEmitted(tx, 'ServiceVersionCreated')
     })
@@ -207,7 +203,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.transferServiceOwnership(sids[0], accounts[1], { from: accounts[0] }))
     })
     it('createServiceVersion', async () => {
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] }))
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] }))
     })
     it('createServiceOffer', async () => {
       await truffleAssert.reverts(marketplace.createServiceOffer(sids[0], offers[0].price, offers[0].duration, { from: accounts[0] }))
@@ -219,7 +215,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.purchase(sids[0], 0, { from: accounts[0] }))
     })
     it('publishServiceVersion', async () => {
-      await truffleAssert.reverts(marketplace.publishServiceVersion(sids[1], versions[1].hash, versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] }))
+      await truffleAssert.reverts(marketplace.publishServiceVersion(sids[1], versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] }))
     })
   })
 })
@@ -331,60 +327,59 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       assert.equal(await marketplace.serviceVersionsLength(sids[0]), 0)
     })
     it('should fail not service owner', async () => {
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[1] }), errors.ERR_SERVICE_NOT_OWNER)
-    })
-    it('should fail hash is too long', async () => {
-      await truffleAssert.fails(marketplace.createServiceVersion(sids[0], ZERO_HASH + '1', versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] }))
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].manifest, versions[0].manifestProtocol, { from: accounts[1] }), errors.ERR_SERVICE_NOT_OWNER)
     })
     it('should fail get version list count - service not exist', async () => {
       await truffleAssert.reverts(marketplace.serviceVersionsLength(sids[1]), errors.ERR_SERVICE_NOT_EXIST)
     })
     it('should fail get version list item - service not exist', async () => {
-      await truffleAssert.reverts(marketplace.serviceHash(sids[1], 0), errors.ERR_SERVICE_NOT_EXIST)
+      await truffleAssert.reverts(marketplace.serviceVersionHash(sids[1], 0), errors.ERR_SERVICE_NOT_EXIST)
     })
     it('should fail get version - service not exist', async () => {
-      await truffleAssert.reverts(marketplace.serviceVersion(sids[1], versions[0].hash), errors.ERR_SERVICE_NOT_EXIST)
+      await truffleAssert.reverts(marketplace.serviceVersion(soliditySha3(accounts[0], sids[0], versions[0].manifest, versions[0].manifestProtocol)), errors.ERR_SERVICE_NOT_EXIST)
     })
     it('should fail manifest empty', async () => {
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, '0x00', versions[0].manifestProtocol, { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_LEN)
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, '0x0000', versions[0].manifestProtocol, { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_LEN)
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], '0x00', versions[0].manifestProtocol, { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_LEN)
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], '0x0000', versions[0].manifestProtocol, { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_LEN)
     })
     it('should fail manifest protocol empty', async () => {
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, '0x00', { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_PROTOCOL_LEN)
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, '0x00', { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_PROTOCOL_LEN)
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].manifest, '0x00', { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_PROTOCOL_LEN)
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].manifest, '0x00', { from: accounts[0] }), errors.ERR_VERSION_MANIFEST_PROTOCOL_LEN)
     })
     it('version should not exist', async () => {
-      assert.isFalse(await marketplace.isServiceVersionExist(sids[0], versions[0].hash))
+      assert.isFalse(await marketplace.isServiceVersionExist(soliditySha3(accounts[0], sids[0], versions[0].manifest, versions[0].manifestProtocol)))
     })
     it('should create service version', async () => {
-      await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
+      await marketplace.createServiceVersion(sids[0], versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
     })
     it('should fail create service with existing version', async () => {
-      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] }), errors.ERR_VERSION_EXIST)
+      await truffleAssert.reverts(marketplace.createServiceVersion(sids[0], versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] }), errors.ERR_VERSION_EXIST)
     })
     it('should have one service version', async () => {
+      const versionHash = soliditySha3(accounts[0], sids[0], versions[0].manifest, versions[0].manifestProtocol)
       assert.equal(await marketplace.serviceVersionsLength(sids[0]), 1)
-      assert.isTrue(await marketplace.isServiceVersionExist(sids[0], versions[0].hash))
-      const version = await marketplace.serviceVersion(sids[0], versions[0].hash)
+      assert.isTrue(await marketplace.isServiceVersionExist(versionHash))
+      const version = await marketplace.serviceVersion(versionHash)
       assert.equal(version.manifest, versions[0].manifest)
       assert.equal(version.manifestProtocol, versions[0].manifestProtocol)
-      assert.equal(await marketplace.serviceHash(sids[0], 0), versions[0].hash)
+      assert.equal(await marketplace.serviceVersionHash(sids[0], 0), versionHash)
     })
     it('should create 2nd service version', async () => {
-      await marketplace.createServiceVersion(sids[0], versions[1].hash, versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] })
+      await marketplace.createServiceVersion(sids[0], versions[1].manifest, versions[1].manifestProtocol, { from: accounts[0] })
     })
     it('should have two service versions', async () => {
+      const versionHash = soliditySha3(accounts[0], sids[0], versions[1].manifest, versions[1].manifestProtocol)
       assert.equal(await marketplace.serviceVersionsLength(sids[0]), 2)
-      assert.isTrue(await marketplace.isServiceVersionExist(sids[0], versions[1].hash))
-      const version = await marketplace.serviceVersion(sids[0], versions[1].hash)
+      assert.isTrue(await marketplace.isServiceVersionExist(versionHash))
+      const version = await marketplace.serviceVersion(versionHash)
       assert.equal(version.manifest, versions[1].manifest)
       assert.equal(version.manifestProtocol, versions[1].manifestProtocol)
-      assert.equal(await marketplace.serviceHash(sids[0], 1), versions[1].hash)
+      assert.equal(await marketplace.serviceVersionHash(sids[0], 1), versionHash)
     })
     it('should set create time', async () => {
-      const tx = await marketplace.createServiceVersion(sids[0], versions[2].hash, versions[2].manifest, versions[2].manifestProtocol, { from: accounts[0] })
+      const tx = await marketplace.createServiceVersion(sids[0], versions[2].manifest, versions[2].manifestProtocol, { from: accounts[0] })
       const block = await web3.eth.getBlock(tx.receipt.blockHash)
-      const version = await marketplace.serviceVersion(sids[0], versions[2].hash)
+      const version = await marketplace.serviceVersion(soliditySha3(accounts[0], sids[0], versions[2].manifest, versions[2].manifestProtocol))
       assert.equal(version.createTime, block.timestamp)
     })
   })
@@ -414,7 +409,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
       await truffleAssert.reverts(marketplace.createServiceOffer(sids[0], offers[0].price, offers[0].duration, { from: accounts[0] }), errors.ERR_OFFER_NO_VERSION)
     })
     it('should create service version', async () => {
-      await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
+      await marketplace.createServiceVersion(sids[0], versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
     })
     it('should fail duration is 0', async () => {
       await truffleAssert.reverts(marketplace.createServiceOffer(sids[0], offers[0].price, 0, { from: accounts[0] }), errors.ERR_OFFER_DURATION_MIN)
@@ -474,7 +469,7 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
     await marketplace.createService(sids[0], { from: accounts[0] })
-    await marketplace.createServiceVersion(sids[0], versions[0].hash, versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
+    await marketplace.createServiceVersion(sids[0], versions[0].manifest, versions[0].manifestProtocol, { from: accounts[0] })
     for (let i = 0; i < offers.length; i++) {
       await marketplace.createServiceOffer(sids[0], offers[i].price, offers[i].duration, { from: accounts[0] })
     }
