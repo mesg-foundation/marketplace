@@ -451,7 +451,17 @@ contract Marketplace is Ownable, Pausable {
     returns (bool authorized)
   {
     (Service storage s,) = _service(sid);
-    return s.owner == purchaser || s.purchases[purchaser].expire >= now;
+    if (s.owner == purchaser || s.purchases[purchaser].expire >= now) {
+      return true;
+    }
+
+    for (uint i = 0; i < s.offers.length; i++) {
+      if (s.offers[i].active && s.offers[i].price == 0) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
