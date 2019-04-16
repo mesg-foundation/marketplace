@@ -4,12 +4,12 @@ Deployed at address [`0x94F4cB92Fe9f547574Aec617B1594B13aBd47Ad3`](https://ropst
 
 ## Installation
 
-- Install [Ganache](https://github.com/trufflesuite/ganache/releases/latest)
 - `npm install`
 
 ## Test
 
 ```
+npm run ganache-cli
 npm run test
 ```
 

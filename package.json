@@ -6,6 +6,7 @@
     "truffle": "truffle",
     "compile": "truffle compile",
     "migrate": "truffle migrate --interactive",
+    "ganache-cli": "ganache-cli",
     "lint:sol": "solium -d .",
     "lint:sol:fix": "solium --fix -d .",
     "test": "truffle test",
