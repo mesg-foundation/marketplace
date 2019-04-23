@@ -29,6 +29,7 @@
     "chai": "^4.2.0",
     "eth-gas-reporter": "^0.1.12",
     "ethlint": "^1.2.3",
+    "ganache-cli": "^6.4.3",
     "truffle-assertions": "^0.7.2",
     "typechain": "^0.3.11"
   },
