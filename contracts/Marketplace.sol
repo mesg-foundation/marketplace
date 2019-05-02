@@ -209,7 +209,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   /**
-    Externals
+    External and public functions
    */
 
   function createService(bytes memory sid)
@@ -354,6 +354,10 @@ contract Marketplace is Ownable, Pausable {
     );
   }
 
+  function destroy() public onlyOwner {
+    selfdestruct(msg.sender);
+  }
+
   /**
     External views
    */
@@ -465,7 +469,7 @@ contract Marketplace is Ownable, Pausable {
   }
 
   /**
-    Publics
+    Public views
    */
 
   function isServiceExist(bytes memory sid)

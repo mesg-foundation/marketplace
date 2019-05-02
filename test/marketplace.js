@@ -85,7 +85,7 @@ const offers = [
 
 const initTokenBalance = 10e3
 
-contract('Marketplace', async ([ owner, ...accounts ]) => {
+contract('Marketplace', async ([ owner, other ]) => {
   before(async () => {
     token = await Token.new('MESG', 'MESG', 18, 25 * 10e6, { from: owner })
     marketplace = await Marketplace.new(token.address, { from: owner })
@@ -100,6 +100,16 @@ contract('Marketplace', async ([ owner, ...accounts ]) => {
     })
     it('service list must be empty on creation', async () => {
       assert.equal(await marketplace.servicesLength(), 0)
+    })
+  })
+
+  describe('destroy', async () => {
+    it('should revert when called not by owner', async () => {
+      await truffleAssert.reverts(marketplace.destroy({ from: other }))
+    })
+
+    it('should be destroyable', async () => {
+      await marketplace.destroy({ from: owner })
     })
   })
 })
