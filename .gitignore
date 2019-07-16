@@ -1,10 +1,4 @@
-build
 node_modules
-.envrc
-.log
-coverage
-coverage.json
-comparison
-deployment
-test-data
-etherscan
+build
+zos.dev*.json
+.zos.session

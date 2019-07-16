@@ -1,0 +1,18 @@
+{
+  "zosversion": "2.2",
+  "contracts": {
+    "Marketplace": "Marketplace"
+  },
+  "dependencies": {
+    "openzeppelin-eth": "2.2.0"
+  },
+  "name": "beachhead",
+  "version": "1.0.0",
+  "compiler": {
+    "manager": "zos",
+    "solcVersion": "0.5.10",
+    "compilerSettings": {
+      "optimizer": {}
+    }
+  }
+}

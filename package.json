@@ -1,37 +1,26 @@
 {
-  "name": "marketplace",
+  "name": "beachhead",
   "version": "1.0.0",
+  "description": "",
   "main": "index.js",
   "scripts": {
-    "truffle": "truffle",
-    "compile": "truffle compile",
-    "migrate": "truffle migrate --interactive",
-    "ganache-cli": "ganache-cli",
-    "lint:sol": "solium -d .",
-    "lint:sol:fix": "solium --fix -d .",
+    "zos": "zos",
+    "ganache": "ganache-cli",
     "test": "truffle test",
-    "typescript": "npm run compile && typechain --target=web3-1.0.0 --outDir=build/typescript './build/contracts/*.json'",
+    "lint:sol": "solium --fix -d .",
     "coverage": "solidity-coverage"
   },
   "keywords": [],
-  "author": "Anthony Estebe <anthony@mesg.com>",
+  "author": "",
   "license": "ISC",
   "dependencies": {
-    "openzeppelin-solidity": "^2.1.3",
-    "solidity-coverage": "git+https://github.com/rotcivegaf/solidity-coverage.git#5875f5b7bc74d447f3312c9c0e9fc7814b482477",
-    "truffle": "^5.0.7",
-    "truffle-hdwallet-provider": "^1.0.5"
-  },
-  "directories": {
-    "test": "test"
+    "openzeppelin-eth": "^2.2.0"
   },
   "devDependencies": {
-    "chai": "^4.2.0",
-    "eth-gas-reporter": "^0.1.12",
-    "ethlint": "^1.2.3",
-    "ganache-cli": "^6.4.3",
-    "truffle-assertions": "^0.7.2",
-    "typechain": "^0.3.11"
-  },
-  "description": ""
+    "ganache-cli": "^6.4.5",
+    "solidity-coverage": "^0.6.2",
+    "truffle": "^5.0.27",
+    "zos": "^2.4.1",
+    "zos-lib": "^2.4.1"
+  }
 }
